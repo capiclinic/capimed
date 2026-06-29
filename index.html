@@ -2179,6 +2179,7 @@ function activateChat() {
 
 <!-- Firebase Realtime Database -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
 // ══ FIREBASE CONFIG ══
@@ -2193,6 +2194,32 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
+// ══ EMAILJS CONFIG ══
+const EMAILJS_SERVICE  = 'service_m597538';
+const EMAILJS_TEMPLATE = 'template_l9kcr65';
+const EMAILJS_KEY      = 's2qpb-p7CqdfDNgpb';
+emailjs.init(EMAILJS_KEY);
+
+// Envia e-mail via EmailJS — retorna true/false
+async function enviarEmail(para, nomeDestinatario, assunto, senha, loginId, tipo) {
+  try {
+    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+      to_email:  para,
+      to_name:   nomeDestinatario,
+      assunto:   assunto,
+      senha:     senha,
+      login_id:  loginId,
+      tipo:      tipo,        // 'paciente' ou 'medico'
+      app_name:  'CapiClinic',
+      reply_to:  'capiclinic.med@gmail.com',
+    });
+    return true;
+  } catch(e) {
+    console.warn('EmailJS erro:', e);
+    return false;
+  }
+}
 
 // ══════════════════════════════════════════════════════
 // CAMADA DE DADOS — Firebase (primário) + localStorage (cache/fallback)
@@ -4724,14 +4751,22 @@ async function enviarRecuperacao() {
     // Atualiza MED_USERS em memória
     MED_USERS[crmEncontrado] = novaSenha;
 
-    // Simula envio de e-mail (exibe a senha na tela — em produção, usar backend/e-mail real)
+    // Envia e-mail via EmailJS
+    const nomeDoc = (encontrado.nome || MED_NAMES[crmEncontrado] || 'Médico').split(' ').slice(0,2).join(' ');
+    const emailEnviado = await enviarEmail(
+      emailDigitado, nomeDoc,
+      'Sua nova senha provisória — CapiClinic',
+      novaSenha, crmEncontrado, 'medico'
+    );
+
     document.getElementById('esqueci-step-email').style.display = 'none';
     document.getElementById('esqueci-step-ok').style.display = '';
-    document.getElementById('esqueci-ok-msg').innerHTML =
-      `Uma nova senha temporária foi enviada para <b>${emailDigitado}</b>.<br><br>
-       <span style="font-size:11px;color:var(--muted)">Enquanto o envio de e-mail automático está sendo configurado, sua nova senha é:</span><br>
-       <span style="font-size:20px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.1em">${novaSenha}</span><br>
-       <span style="font-size:11px;color:var(--muted)">Altere-a após o login em "Editar perfil → Alterar senha".</span>`;
+    document.getElementById('esqueci-ok-msg').innerHTML = emailEnviado
+      ? `✅ Nova senha enviada para <b>${emailDigitado}</b>.<br><br>
+         <span style="font-size:11px;color:var(--muted)">Verifique sua caixa de entrada (e a pasta de spam).<br>Use a senha recebida para entrar e criar uma nova senha definitiva.</span>`
+      : `<b>Senha provisória gerada:</b><br>
+         <span style="font-size:22px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.1em">${novaSenha}</span><br>
+         <span style="font-size:11px;color:var(--muted)">(Falha no envio automático — anote esta senha e altere após o login)</span>`;
 
   } catch(e) {
     errEl.textContent = 'Erro ao processar solicitação. Tente novamente.';
@@ -4775,14 +4810,23 @@ async function enviarRecuperacaoPac() {
     const novasSenha = 'Capi' + Math.random().toString(36).slice(2,7).toUpperCase();
     const dadosAtuais = {...encontrado, senha: novasSenha, senhaProvisoria: true};
     await DB.set('pacientes/' + idEncontrado, dadosAtuais);
+
+    // Envia e-mail via EmailJS
+    const nomeResp = (encontrado.responsavel || encontrado.nome || 'Responsável').split(' ').slice(0,2).join(' ');
+    const emailEnviado = await enviarEmail(
+      emailDigitado, nomeResp,
+      'Sua nova senha de acesso — CapiClinic',
+      novasSenha, idEncontrado, 'paciente'
+    );
+
     document.getElementById('esp-step-email').style.display = 'none';
     document.getElementById('esp-step-ok').style.display = '';
-    document.getElementById('esp-ok-msg').innerHTML =
-      `<b>Senha provisória gerada!</b><br><br>
-       <span style="font-size:11px;color:var(--muted)">Enquanto o envio automático de e-mail está sendo configurado, a nova senha é:</span><br>
-       <span style="font-size:22px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.1em">${novasSenha}</span><br>
-       <span style="font-size:11px;color:var(--muted)">Login (ID): <b>${idEncontrado}</b></span><br><br>
-       <span style="font-size:11px;color:var(--muted)">Na próxima entrada o sistema pedirá para criar uma senha definitiva.</span>`;
+    document.getElementById('esp-ok-msg').innerHTML = emailEnviado
+      ? `✅ Nova senha enviada para <b>${emailDigitado}</b>.<br><br>
+         <span style="font-size:11px;color:var(--muted)">Verifique sua caixa de entrada (e a pasta de spam).<br>Use a senha recebida para entrar e criar uma senha definitiva.</span>`
+      : `<b>Senha provisória gerada:</b><br>
+         <span style="font-size:22px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.1em">${novasSenha}</span><br>
+         <span style="font-size:11px;color:var(--muted)">Login: <b>${idEncontrado}</b><br>(Falha no envio automático — anote esta senha)</span>`;
   } catch(e) {
     errEl.textContent = 'Erro ao processar. Tente novamente.'; errEl.style.display = 'block'; console.error(e);
   }
@@ -5022,26 +5066,37 @@ async function salvarCadastroPac() {
     const pl = JSON.parse(localStorage.getItem('capikids_pacientes')||'{}');
     pl[id] = novoPac;
     localStorage.setItem('capikids_pacientes', JSON.stringify(pl));
+
+    // Envia e-mail de boas-vindas com senha via EmailJS
+    const nomeResp = respNome.split(' ').slice(0,2).join(' ');
+    const emailEnviado = await enviarEmail(
+      contaEmail, nomeResp,
+      'Bem-vindo ao CapiClinic — seus dados de acesso',
+      senhaProvisoria, id, 'paciente'
+    );
+
     fecharCadPac();
     // Exibe confirmação
     const msg = document.createElement('div');
-    msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,.2);padding:32px 36px;z-index:9999;text-align:center;max-width:360px;width:90vw';
+    msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,.2);padding:32px 36px;z-index:9999;text-align:center;max-width:380px;width:90vw';
     msg.innerHTML = `
       <div style="font-size:40px;margin-bottom:12px">✅</div>
       <div style="font-size:17px;font-weight:900;color:var(--navy);margin-bottom:6px">Paciente cadastrado!</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:16px"><b>${pacNome}</b> foi registrado com sucesso.</div>
-      <div style="background:#EAF2FF;border-radius:12px;padding:14px 18px;margin-bottom:12px">
-        <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--blue);margin-bottom:6px">🔑 Acesso do responsável</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Login (ID do paciente):</div>
-        <div style="font-size:22px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.1em">${id}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:3px">Senha provisória:</div>
-        <div style="font-size:22px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy)">${senhaProvisoria}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:6px">⚠️ Entregar ao responsável — na 1ª entrada ele escolherá uma nova senha</div>
-      </div>
-      <div style="background:#F0FFF7;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--muted)">
-        📧 E-mail cadastrado: <b>${contaEmail}</b><br>
-        <span style="font-size:11px">O responsável pode usar "Esqueci minha senha" para receber uma nova senha provisória neste e-mail.</span>
-      </div>
+      ${emailEnviado
+        ? `<div style="background:#F0FFF7;border:1.5px solid #86EFAC;border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:13px">
+             📧 <b>E-mail enviado</b> para <b>${contaEmail}</b><br>
+             <span style="font-size:11px;color:var(--muted)">O responsável receberá o ID e a senha provisória no e-mail.</span>
+           </div>`
+        : `<div style="background:#EAF2FF;border-radius:12px;padding:14px 18px;margin-bottom:12px">
+             <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--blue);margin-bottom:6px">🔑 Acesso do responsável</div>
+             <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Login (ID do paciente):</div>
+             <div style="font-size:22px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.1em">${id}</div>
+             <div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:3px">Senha provisória:</div>
+             <div style="font-size:22px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy)">${senhaProvisoria}</div>
+             <div style="font-size:10px;color:var(--red);margin-top:6px">⚠️ Falha no envio — entregue esta senha manualmente ao responsável</div>
+           </div>`
+      }
       <button onclick="this.parentNode.remove()" style="background:linear-gradient(135deg,var(--green),#0f6b3a);color:white;border:none;border-radius:10px;padding:10px 24px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%">OK</button>`;
     document.body.appendChild(msg);
   } catch(e) {
