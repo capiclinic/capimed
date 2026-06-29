@@ -17,7 +17,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
 .hero{background:#ffffff;color:var(--ink);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 var(--line),0 2px 12px rgba(12,32,58,.06)}
-.hero-inner{display:flex;align-items:center;flex-wrap:nowrap;max-width:1320px;margin:0 auto;min-height:64px;gap:0;padding:6px 0}
+.hero-inner{display:flex;align-items:center;flex-wrap:wrap;max-width:1320px;margin:0 auto;min-height:64px;gap:0;padding:6px 0}
 .logo-area{display:flex;align-items:center;flex-shrink:0;margin-right:28px;min-width:0}
 .logo-svg{width:44px;height:44px;flex-shrink:0}
 .logo-name{font-size:22px;font-weight:900;letter-spacing:-.03em;line-height:1}
@@ -25,7 +25,8 @@ body{background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-
 .logo-name .c4{color:#1F6FEB}.logo-name .c5{color:#6B46C1}.logo-name .c6{color:#C7362F}
 .logo-name .c7{color:#0D9488}.logo-name .c8{color:#E54B4B}
 .hero-title p{font-size:11px;color:var(--muted);margin-top:1px;font-weight:600}
-.tabs{display:flex;gap:0;align-items:stretch;flex:1 1 auto;overflow-x:auto;height:64px;min-width:0;-webkit-overflow-scrolling:touch;justify-content:flex-start}
+.tabs{display:flex;gap:0;align-items:stretch;flex:1 1 auto;overflow-x:auto;height:64px;min-width:0;-webkit-overflow-scrolling:touch;justify-content:flex-start;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
 .tab{border:none;background:transparent;color:var(--muted);padding:0 18px;font-weight:700;cursor:pointer;font-size:13.5px;border-bottom:3px solid transparent;border-top:3px solid transparent;transition:.15s;font-family:'DM Sans',sans-serif;white-space:nowrap;height:100%;display:flex;align-items:center;flex-shrink:0}
 .tab.active{color:var(--blue);border-bottom-color:var(--blue)}
 .tab:hover:not(.active){color:var(--navy);background:#F4F7FC}
@@ -213,7 +214,7 @@ button.export{background:var(--teal);color:white}
 /* ── RESPONSIVE ── */
 @media(max-width:1080px){.doc-grid,.meta,.file-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:680px){.doc-grid,.meta,.meta-3,.meta-2,.exam-grid,.file-grid{grid-template-columns:1fr}.vitals-row{margin-left:0}.home-capy{display:none}}
-@media(max-width:760px){.hero{padding:0 12px}.hero-inner{padding:8px 0;gap:6px 0}.logo-area{width:100%;margin-right:0}.tabs{width:100%;flex:1 1 100%;height:46px}.tab{padding:0 12px;font-size:12px}main{padding:14px 10px}.panel{padding:14px;border-radius:14px}.home-hero{padding:28px 20px}.home-hero h2{font-size:20px}#contato>div{grid-template-columns:1fr!important}}
+@media(max-width:760px){.hero{padding:0 12px}.hero-inner{padding:4px 0;gap:0}.logo-area{width:100%;margin-right:0;display:flex;align-items:center}.tabs{width:100%;flex:1 1 100%;height:46px;border-top:1px solid var(--line)}.tab{padding:0 10px;font-size:11.5px}main{padding:14px 10px}.panel{padding:14px;border-radius:14px}.home-hero{padding:28px 20px}.home-hero h2{font-size:20px}#contato>div{grid-template-columns:1fr!important}}
 </style>
 </head>
 <body>
@@ -557,12 +558,6 @@ button.export{background:var(--teal);color:white}
       <div class="login-field"><label>Login</label><input id="lmUser" type="text" placeholder="" autocomplete="username"></div>
       <div class="login-field"><label>Senha</label><input id="lmPass" type="password" placeholder="" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLoginMed()"></div>
       <button class="primary" style="width:100%;margin-top:8px" onclick="doLoginMed()">Entrar</button>
-      <div style="text-align:center;margin-top:14px">
-        <a href="javascript:void(0)" onclick="abrirEsqueciSenha()"
-           style="font-size:12.5px;color:var(--blue);font-weight:700;text-decoration:none;cursor:pointer">
-          Esqueci minha senha
-        </a>
-      </div>
     </div>
   </div>
 </section>
@@ -696,12 +691,9 @@ button.export{background:var(--teal);color:white}
               style="width:100%;border:0;outline:0;background:transparent;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink)">
           </div>
 
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="display:flex;gap:10px">
             <button onclick="saveMedProfileAndClose()" style="background:linear-gradient(135deg,var(--green),#0f6b3a);color:white;border:0;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
               ✅ Salvar alterações
-            </button>
-            <button onclick="abrirAlterarSenha()" style="background:white;color:var(--blue);border:1.5px solid var(--blue);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
-              🔒 Alterar senha
             </button>
             <button onclick="toggleMedEdit(false)" style="background:white;color:var(--navy);border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
               Cancelar
@@ -719,7 +711,6 @@ button.export{background:var(--teal);color:white}
     </div>
     <button class="step-btn" id="msub-tele" onclick="showMedSub('tele')">📹 Tele-atendimento</button>
     <button class="step-btn" id="msub-pacs" onclick="showMedSub('pacs')">👥 Meus Pacientes</button>
-    <button class="step-btn" onclick="abrirCadPac()" style="color:var(--green);border-color:rgba(23,138,74,.3);background:#F0FFF7">👶 Cadastrar Paciente</button>
     <button class="step-btn" id="msub1" onclick="showMedSub(1)">📁 Histórico</button>
     <button class="step-btn" id="msub2" onclick="showMedSub(2)">📅 Agenda</button>
     <button class="step-btn" id="msub3" onclick="showMedSub(3)">📤 Arquivos</button>
@@ -2464,32 +2455,14 @@ function goPaciente(btn) {
 }
 
 // ═══════════════════════════ LOGIN ═══════════════════════════
-async function doLoginMed() {
+function doLoginMed() {
   const u = document.getElementById('lmUser').value.trim();
   const p = document.getElementById('lmPass').value;
   const err = document.getElementById('loginMedErr');
-  err.style.display = 'none';
-
-  // 1. Verifica senha no Firebase (permite senha alterada)
-  try {
-    const dadosMed = await DB.get('medicos/' + u);
-    if (dadosMed && dadosMed.senhaMed) {
-      if (dadosMed.senhaMed === p) {
-        MED_USERS[u] = p; // sincroniza em memória
-        _activateMedSession(u);
-        toast('Bem-vindo, ' + MED_NAMES[u].split(' ').slice(0,2).join(' ') + '!', 'ok');
-        return;
-      } else { err.style.display = 'block'; return; }
-    }
-  } catch(e) { /* fallback abaixo */ }
-
-  // 2. Fallback: senha hardcoded (MED_USERS)
   if (MED_USERS[u] && MED_USERS[u] === p) {
     _activateMedSession(u);
     toast('Bem-vindo, ' + MED_NAMES[u].split(' ').slice(0, 2).join(' ') + '!', 'ok');
-  } else {
-    err.style.display = 'block';
-  }
+  } else { err.style.display = 'block'; }
 }
 
 function _activateMedSession(u) {
@@ -4650,268 +4623,6 @@ function removerAssinatura() {
 
 // ═══════════════════════════ MÁSCARA DE TELEFONE ═══════════════════════════
 // Formato: (xx) xxxxx-xxxx  — aceita celular (11 dígitos) e fixo (10 dígitos)
-function maskCPF(el) {
-  let d = el.value.replace(/\D/g,'');
-  if (d.length > 11) d = d.slice(0,11);
-  let m = '';
-  if (d.length <= 3) m = d;
-  else if (d.length <= 6) m = d.slice(0,3)+'.'+d.slice(3);
-  else if (d.length <= 9) m = d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6);
-  else m = d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6,9)+'-'+d.slice(9);
-  el.value = m;
-}
-
-// ══════════ ESQUECI MINHA SENHA ══════════
-function abrirEsqueciSenha() {
-  const m = document.getElementById('modal-esqueci-senha');
-  m.style.display = 'flex';
-  document.getElementById('esqueci-step-email').style.display = '';
-  document.getElementById('esqueci-step-ok').style.display = 'none';
-  document.getElementById('esqueci-err').style.display = 'none';
-  document.getElementById('esqueci-email-input').value = '';
-  setTimeout(() => document.getElementById('esqueci-email-input').focus(), 100);
-}
-function fecharEsqueciSenha() {
-  document.getElementById('modal-esqueci-senha').style.display = 'none';
-}
-async function enviarRecuperacao() {
-  const emailDigitado = document.getElementById('esqueci-email-input').value.trim().toLowerCase();
-  const errEl = document.getElementById('esqueci-err');
-  errEl.style.display = 'none';
-
-  if (!emailDigitado || !emailDigitado.includes('@')) {
-    errEl.textContent = 'Informe um e-mail válido.';
-    errEl.style.display = 'block'; return;
-  }
-
-  // Busca médico pelo e-mail no Firebase
-  try {
-    const meds = await DB.get('medicos') || {};
-    let encontrado = null;
-    let crmEncontrado = null;
-    for (const [crm, dados] of Object.entries(meds)) {
-      if ((dados.email||'').toLowerCase() === emailDigitado) {
-        encontrado = dados; crmEncontrado = crm; break;
-      }
-    }
-
-    if (!encontrado) {
-      errEl.textContent = 'Nenhuma conta encontrada com este e-mail.';
-      errEl.style.display = 'block'; return;
-    }
-
-    // Gera nova senha temporária
-    const novaSenha = 'Capi' + Math.random().toString(36).slice(2,7).toUpperCase();
-
-    // Salva nova senha no Firebase
-    const dadosAtuais = encontrado;
-    dadosAtuais.senhaMed = novaSenha;
-    await DB.set('medicos/' + crmEncontrado, dadosAtuais);
-
-    // Atualiza MED_USERS em memória
-    MED_USERS[crmEncontrado] = novaSenha;
-
-    // Simula envio de e-mail (exibe a senha na tela — em produção, usar backend/e-mail real)
-    document.getElementById('esqueci-step-email').style.display = 'none';
-    document.getElementById('esqueci-step-ok').style.display = '';
-    document.getElementById('esqueci-ok-msg').innerHTML =
-      `Uma nova senha temporária foi enviada para <b>${emailDigitado}</b>.<br><br>
-       <span style="font-size:11px;color:var(--muted)">Enquanto o envio de e-mail automático está sendo configurado, sua nova senha é:</span><br>
-       <span style="font-size:20px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.1em">${novaSenha}</span><br>
-       <span style="font-size:11px;color:var(--muted)">Altere-a após o login em "Editar perfil → Alterar senha".</span>`;
-
-  } catch(e) {
-    errEl.textContent = 'Erro ao processar solicitação. Tente novamente.';
-    errEl.style.display = 'block';
-    console.error(e);
-  }
-}
-
-// ══════════ ALTERAR SENHA ══════════
-function abrirAlterarSenha() {
-  const m = document.getElementById('modal-alterar-senha');
-  m.style.display = 'flex';
-  ['altsn-atual','altsn-nova','altsn-conf'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('altsn-err').style.display = 'none';
-  setTimeout(() => document.getElementById('altsn-atual').focus(), 100);
-}
-function fecharAlterarSenha() {
-  document.getElementById('modal-alterar-senha').style.display = 'none';
-}
-async function confirmarAlteracaoSenha() {
-  const atual = document.getElementById('altsn-atual').value;
-  const nova  = document.getElementById('altsn-nova').value;
-  const conf  = document.getElementById('altsn-conf').value;
-  const errEl = document.getElementById('altsn-err');
-  errEl.style.display = 'none';
-
-  if (!atual) { errEl.textContent = 'Informe a senha atual.'; errEl.style.display = 'block'; return; }
-  if (MED_USERS[medCRM] !== atual) { errEl.textContent = 'Senha atual incorreta.'; errEl.style.display = 'block'; return; }
-  if (nova.length < 6) { errEl.textContent = 'A nova senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return; }
-  if (nova !== conf) { errEl.textContent = 'As senhas não coincidem.'; errEl.style.display = 'block'; return; }
-
-  try {
-    const dadosAtuais = await DB.get('medicos/' + medCRM) || {};
-    dadosAtuais.senhaMed = nova;
-    await DB.set('medicos/' + medCRM, dadosAtuais);
-    MED_USERS[medCRM] = nova; // atualiza em memória
-    fecharAlterarSenha();
-    toggleMedEdit(false);
-    toast('Senha alterada com sucesso! ✅', 'ok');
-  } catch(e) {
-    errEl.textContent = 'Erro ao salvar nova senha. Tente novamente.';
-    errEl.style.display = 'block';
-  }
-}
-
-// ══════════ CADASTRO DE PACIENTE ══════════
-let _cadPacIdGerado = null;
-let _cadDuplicataId = null;
-let _cadDuplicataVerifyTimer = null;
-
-function abrirCadPac() {
-  const m = document.getElementById('modal-cad-pac');
-  m.style.display = 'flex';
-  // Limpar campos
-  ['cad-resp-nome','cad-resp-cpf','cad-resp-tel','cad-resp-email',
-   'cad-pac-nome','cad-pac-cpf','cad-pac-end','cad-pac-conv'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  ['cad-resp-nasc','cad-pac-nasc'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  ['cad-resp-par','cad-pac-sexo'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  document.getElementById('cad-id-preview').style.display = 'none';
-  document.getElementById('cad-duplicata-aviso').style.display = 'none';
-  document.getElementById('cad-err').style.display = 'none';
-  _cadPacIdGerado = null; _cadDuplicataId = null;
-  const btn = document.getElementById('btn-cad-pac-salvar');
-  btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'not-allowed';
-  setTimeout(() => document.getElementById('cad-resp-nome').focus(), 100);
-}
-function fecharCadPac() {
-  document.getElementById('modal-cad-pac').style.display = 'none';
-}
-function validarCadPac() {
-  const resp = (document.getElementById('cad-resp-nome')?.value||'').trim();
-  const tel  = (document.getElementById('cad-resp-tel')?.value||'').replace(/\D/g,'');
-  const nome = (document.getElementById('cad-pac-nome')?.value||'').trim();
-  const nasc = (document.getElementById('cad-pac-nasc')?.value||'').trim();
-  const ok   = resp.length >= 3 && tel.length >= 10 && nome.length >= 3 && nasc.length === 10;
-  const btn  = document.getElementById('btn-cad-pac-salvar');
-  if (!btn) return;
-  if (ok && !_cadDuplicataId) {
-    // Gera preview do ID se ainda não gerou
-    if (!_cadPacIdGerado) gerarPreviewId(nome, nasc);
-    btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
-  } else {
-    btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'not-allowed';
-  }
-}
-async function gerarPreviewId(nome, nasc) {
-  const pacs = await DB.get('pacientes') || {};
-  let id;
-  do { id = gerarNovoID(); } while (pacs[id]);
-  _cadPacIdGerado = id;
-  document.getElementById('cad-id-valor').textContent = id;
-  document.getElementById('cad-senha-preview').textContent = senhaInicial(id, nasc);
-  document.getElementById('cad-id-preview').style.display = 'block';
-}
-function verificarDuplicata() {
-  clearTimeout(_cadDuplicataVerifyTimer);
-  _cadDuplicataVerifyTimer = setTimeout(_verificarDuplicataAsync, 800);
-}
-async function _verificarDuplicataAsync() {
-  const nome = (document.getElementById('cad-pac-nome')?.value||'').trim();
-  const nasc = (document.getElementById('cad-pac-nasc')?.value||'').trim();
-  if (nome.length < 3 || !nasc) return;
-  const existente = await buscarPacienteCadastrado(nome, nasc);
-  if (existente) {
-    _cadDuplicataId = existente.id;
-    document.getElementById('cad-duplicata-id').textContent = existente.id;
-    document.getElementById('cad-duplicata-msg').textContent = `"${existente.nome}" já possui cadastro.`;
-    document.getElementById('cad-duplicata-aviso').style.display = 'block';
-    document.getElementById('cad-id-preview').style.display = 'none';
-    _cadPacIdGerado = null;
-    const btn = document.getElementById('btn-cad-pac-salvar');
-    btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'not-allowed';
-  } else {
-    _cadDuplicataId = null;
-    document.getElementById('cad-duplicata-aviso').style.display = 'none';
-    validarCadPac();
-  }
-}
-function usarPacienteDuplicata() {
-  if (!_cadDuplicataId) return;
-  fecharCadPac();
-  toast('Paciente carregado — ID: ' + _cadDuplicataId, 'ok');
-  // Preenche o campo de busca na Nova Consulta com o ID e abre atendimento
-  showMedSub('atend');
-  const buscaInput = document.getElementById('busca-input');
-  if (buscaInput) { buscaInput.value = _cadDuplicataId; buscaPaciente(_cadDuplicataId); }
-}
-async function salvarCadastroPac() {
-  const errEl = document.getElementById('cad-err');
-  errEl.style.display = 'none';
-
-  const respNome  = (document.getElementById('cad-resp-nome')?.value||'').trim();
-  const respNasc  = document.getElementById('cad-resp-nasc')?.value||'';
-  const respCPF   = (document.getElementById('cad-resp-cpf')?.value||'').trim();
-  const respTel   = (document.getElementById('cad-resp-tel')?.value||'').trim();
-  const respEmail = (document.getElementById('cad-resp-email')?.value||'').trim();
-  const respPar   = document.getElementById('cad-resp-par')?.value||'';
-  const pacNome   = (document.getElementById('cad-pac-nome')?.value||'').trim();
-  const pacNasc   = document.getElementById('cad-pac-nasc')?.value||'';
-  const pacSexo   = document.getElementById('cad-pac-sexo')?.value||'';
-  const pacCPF    = (document.getElementById('cad-pac-cpf')?.value||'').trim();
-  const pacEnd    = (document.getElementById('cad-pac-end')?.value||'').trim();
-  const pacConv   = (document.getElementById('cad-pac-conv')?.value||'').trim();
-
-  if (!_cadPacIdGerado) {
-    errEl.textContent = 'Aguarde a geração do ID ou preencha todos os campos obrigatórios.';
-    errEl.style.display = 'block'; return;
-  }
-
-  const id = _cadPacIdGerado;
-  const senha = senhaInicial(id, pacNasc);
-
-  const novoPac = {
-    id, nome: pacNome, dnasc: pacNasc, sexo: pacSexo,
-    cpf: pacCPF, endereco: pacEnd, convenio: pacConv,
-    responsavel: respNome, resp_dnasc: respNasc, resp_cpf: respCPF,
-    parentesco: respPar, tel_resp: respTel, email_resp: respEmail,
-    senha, medCRM, criadoEm: new Date().toISOString(),
-  };
-
-  try {
-    await DB.set('pacientes/' + id, novoPac);
-    // Cache local
-    const pl = JSON.parse(localStorage.getItem('capikids_pacientes')||'{}');
-    pl[id] = novoPac;
-    localStorage.setItem('capikids_pacientes', JSON.stringify(pl));
-    fecharCadPac();
-    // Exibe confirmação
-    const msg = document.createElement('div');
-    msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,.2);padding:32px 36px;z-index:9999;text-align:center;max-width:360px;width:90vw';
-    msg.innerHTML = `
-      <div style="font-size:40px;margin-bottom:12px">✅</div>
-      <div style="font-size:17px;font-weight:900;color:var(--navy);margin-bottom:6px">Paciente cadastrado!</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:20px"><b>${pacNome}</b> foi registrado com sucesso.</div>
-      <div style="background:#EAF2FF;border-radius:12px;padding:14px 18px;margin-bottom:16px">
-        <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--blue);margin-bottom:6px">🔑 Acesso do paciente</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Login (ID):</div>
-        <div style="font-size:24px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.1em">${id}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px;margin-bottom:3px">Senha inicial:</div>
-        <div style="font-size:20px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy)">${senha}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:6px">Entregar ao responsável</div>
-      </div>
-      <button onclick="this.parentNode.remove()" style="background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:none;border-radius:10px;padding:10px 24px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%">OK</button>`;
-    document.body.appendChild(msg);
-  } catch(e) {
-    errEl.textContent = 'Erro ao salvar no Firebase: ' + e.message;
-    errEl.style.display = 'block';
-    console.error(e);
-  }
-}
-
 function maskPhone(el) {
   // Extrai apenas os dígitos digitados
   let d = el.value.replace(/\D/g, '');
@@ -5345,119 +5056,5 @@ document.getElementById('pac-mes-sel')&&(document.getElementById('pac-mes-sel').
   }
 })();
 </script>
-
-<!-- ══════════ MODAL: ESQUECI MINHA SENHA ══════════ -->
-<div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;padding:16px">
-  <div style="background:white;border-radius:20px;box-shadow:0 16px 60px rgba(0,0,0,.25);padding:32px;max-width:420px;width:100%;position:relative">
-    <button onclick="fecharEsqueciSenha()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
-    <div style="font-size:28px;text-align:center;margin-bottom:10px">🔑</div>
-    <div style="font-size:18px;font-weight:900;color:var(--navy);text-align:center;margin-bottom:6px">Recuperar senha</div>
-    <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px">Informe o e-mail cadastrado em seu perfil. Enviaremos uma nova senha temporária.</div>
-    <div id="esqueci-step-email">
-      <div class="login-field"><label>E-mail cadastrado</label><input id="esqueci-email-input" type="email" placeholder="seuemail@clinica.com" onkeydown="if(event.key==='Enter')enviarRecuperacao()"></div>
-      <div id="esqueci-err" style="display:none;background:#FDEEEE;color:var(--red);border-radius:8px;padding:8px 12px;font-size:12.5px;margin-bottom:10px"></div>
-      <button onclick="enviarRecuperacao()" style="width:100%;background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:0;border-radius:10px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px">Enviar nova senha</button>
-    </div>
-    <div id="esqueci-step-ok" style="display:none;text-align:center">
-      <div style="font-size:40px;margin-bottom:12px">✅</div>
-      <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:6px">Senha enviada!</div>
-      <div id="esqueci-ok-msg" style="font-size:13px;color:var(--muted);margin-bottom:20px"></div>
-      <button onclick="fecharEsqueciSenha()" style="background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 24px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--navy)">Fechar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════ MODAL: ALTERAR SENHA ══════════ -->
-<div id="modal-alterar-senha" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;padding:16px">
-  <div style="background:white;border-radius:20px;box-shadow:0 16px 60px rgba(0,0,0,.25);padding:32px;max-width:420px;width:100%;position:relative">
-    <button onclick="fecharAlterarSenha()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
-    <div style="font-size:28px;text-align:center;margin-bottom:10px">🔒</div>
-    <div style="font-size:18px;font-weight:900;color:var(--navy);text-align:center;margin-bottom:20px">Alterar senha</div>
-    <div class="login-field" style="margin-bottom:12px"><label>Senha atual</label><input id="altsn-atual" type="password" placeholder=""></div>
-    <div class="login-field" style="margin-bottom:12px"><label>Nova senha</label><input id="altsn-nova" type="password" placeholder="Mínimo 6 caracteres"></div>
-    <div class="login-field" style="margin-bottom:16px"><label>Confirmar nova senha</label><input id="altsn-conf" type="password" placeholder="" onkeydown="if(event.key==='Enter')confirmarAlteracaoSenha()"></div>
-    <div id="altsn-err" style="display:none;background:#FDEEEE;color:var(--red);border-radius:8px;padding:8px 12px;font-size:12.5px;margin-bottom:10px"></div>
-    <div style="display:flex;gap:10px">
-      <button onclick="confirmarAlteracaoSenha()" style="flex:1;background:linear-gradient(135deg,var(--green),#0f6b3a);color:white;border:0;border-radius:10px;padding:11px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">✅ Confirmar</button>
-      <button onclick="fecharAlterarSenha()" style="background:white;color:var(--navy);border:1px solid var(--line);border-radius:10px;padding:11px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════ MODAL: CADASTRO DE PACIENTE ══════════ -->
-<div id="modal-cad-pac" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto">
-  <div style="background:white;border-radius:20px;box-shadow:0 16px 60px rgba(0,0,0,.25);padding:32px;max-width:560px;width:100%;position:relative;margin:auto">
-    <button onclick="fecharCadPac()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
-      <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#EAF2FF,#DBEAFE);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">👶</div>
-      <div>
-        <div style="font-size:18px;font-weight:900;color:var(--navy)">Cadastro de Paciente</div>
-        <div style="font-size:13px;color:var(--muted)">Preencha os dados e um ID único será gerado automaticamente.</div>
-      </div>
-    </div>
-
-    <!-- Responsável Legal -->
-    <div style="margin-bottom:20px">
-      <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--blue);margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #EAF2FF">👤 Responsável Legal</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field" style="grid-column:1/-1"><label>Nome completo *</label><input id="cad-resp-nome" type="text" placeholder="Nome do responsável" oninput="validarCadPac()"></div>
-        <div class="field"><label>Data de nascimento</label><input id="cad-resp-nasc" type="date"></div>
-        <div class="field"><label>CPF</label><input id="cad-resp-cpf" type="text" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)"></div>
-        <div class="field"><label>Telefone / WhatsApp *</label><input id="cad-resp-tel" type="text" placeholder="(00) 00000-0000" maxlength="16" oninput="maskPhone(this);validarCadPac()"></div>
-        <div class="field"><label>E-mail</label><input id="cad-resp-email" type="email" placeholder="email@exemplo.com"></div>
-        <div class="field"><label>Parentesco com o paciente</label>
-          <select id="cad-resp-par" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink)">
-            <option value="">Selecione...</option><option value="Mãe">Mãe</option><option value="Pai">Pai</option>
-            <option value="Avó/Avô">Avó/Avô</option><option value="Tutor legal">Tutor legal</option><option value="Outro">Outro</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- Dados do Paciente -->
-    <div style="margin-bottom:20px">
-      <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--teal);margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #E0F7F5">🩺 Dados do Paciente</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field" style="grid-column:1/-1"><label>Nome completo do paciente *</label><input id="cad-pac-nome" type="text" placeholder="Nome do paciente" oninput="validarCadPac();verificarDuplicata()"></div>
-        <div class="field"><label>Data de nascimento *</label><input id="cad-pac-nasc" type="date" oninput="validarCadPac();verificarDuplicata()"></div>
-        <div class="field"><label>Sexo</label>
-          <select id="cad-pac-sexo" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink)">
-            <option value="">Selecione...</option><option value="M">Masculino</option><option value="F">Feminino</option>
-          </select>
-        </div>
-        <div class="field"><label>CPF do paciente</label><input id="cad-pac-cpf" type="text" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)"></div>
-        <div class="field" style="grid-column:1/-1"><label>Endereço</label><input id="cad-pac-end" type="text" placeholder="Rua, número, bairro, cidade — CEP"></div>
-        <div class="field"><label>Convênio</label><input id="cad-pac-conv" type="text" placeholder="Ex.: Unimed, Bradesco, Particular"></div>
-      </div>
-    </div>
-
-    <!-- Alerta duplicata -->
-    <div id="cad-duplicata-aviso" style="display:none;background:#FFF5DF;border:1.5px solid #E8CC80;border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:13px">
-      ⚠️ <b>Paciente já cadastrado!</b> <span id="cad-duplicata-msg"></span><br>
-      <button onclick="usarPacienteDuplicata()" style="margin-top:8px;background:var(--blue);color:white;border:0;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
-        Usar cadastro existente — ID: <span id="cad-duplicata-id"></span>
-      </button>
-    </div>
-
-    <!-- ID gerado -->
-    <div id="cad-id-preview" style="display:none;background:linear-gradient(135deg,#EAF2FF,#DBEAFE);border-radius:14px;padding:16px 20px;margin-bottom:16px;text-align:center">
-      <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--blue);margin-bottom:6px">ID do Paciente (gerado automaticamente)</div>
-      <div id="cad-id-valor" style="font-size:28px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.15em">—</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Este ID é o login do paciente/responsável</div>
-      <div style="margin-top:8px;font-size:12px;color:var(--navy)">Senha inicial: <b id="cad-senha-preview" style="font-family:'DM Mono',monospace;font-size:14px"></b></div>
-    </div>
-
-    <div id="cad-err" style="display:none;background:#FDEEEE;color:var(--red);border-radius:8px;padding:8px 12px;font-size:12.5px;margin-bottom:10px"></div>
-
-    <div style="display:flex;gap:10px">
-      <button id="btn-cad-pac-salvar" onclick="salvarCadastroPac()" disabled
-        style="flex:1;background:linear-gradient(135deg,var(--green),#0f6b3a);color:white;border:0;border-radius:10px;padding:12px;font-size:14px;font-weight:800;cursor:not-allowed;font-family:'DM Sans',sans-serif;opacity:.4">
-        ✅ Cadastrar paciente
-      </button>
-      <button onclick="fecharCadPac()" style="background:white;color:var(--navy);border:1px solid var(--line);border-radius:10px;padding:12px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
