@@ -5362,9 +5362,69 @@ let _cadPacIdGerado = null;
 let _cadDuplicataId = null;
 let _cadDuplicataVerifyTimer = null;
 
+
+// ═══════════════════════════ BUSCAR PACIENTE POR ID NO MODAL ═══════════════════════════
+async function buscarPacPorIdModal() {
+  const pid    = (document.getElementById('cad-busca-id')?.value||'').trim().toUpperCase();
+  const errEl  = document.getElementById('cad-busca-err');
+  const okEl   = document.getElementById('cad-busca-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  if (!pid) { errEl.textContent = 'Informe o ID do paciente.'; errEl.style.display = 'block'; return; }
+
+  const pac = await DB.get('pacientes/' + pid);
+  if (!pac) { errEl.textContent = 'Nenhum cadastro encontrado com este ID.'; errEl.style.display = 'block'; return; }
+
+  // Preencher campos do responsável
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+  setVal('cad-resp-nome',  pac.responsavel || '');
+  setVal('cad-resp-nasc',  pac.resp_dnasc  || '');
+  setVal('cad-resp-cpf',   pac.resp_cpf    || '');
+  setVal('cad-resp-tel',   pac.tel_resp    || '');
+  setVal('cad-resp-email', pac.email_resp  || '');
+  setVal('cad-conta-email',pac.email_conta || pac.email_resp || '');
+  const parEl = document.getElementById('cad-resp-par');
+  if (parEl && pac.parentesco) parEl.value = pac.parentesco;
+
+  // Preencher campos do paciente
+  setVal('cad-pac-nome',   pac.nome        || '');
+  setVal('cad-pac-nasc',   pac.dnasc       || '');
+  setVal('cad-pac-cpf',    pac.cpf         || '');
+  setVal('cad-pac-end',    pac.endereco    || '');
+  setVal('cad-pac-conv',   pac.convenio    || '');
+  const sexoEl = document.getElementById('cad-pac-sexo');
+  if (sexoEl && pac.sexo) sexoEl.value = pac.sexo;
+
+  // Marcar o ID existente para não criar duplicata
+  window._cadPacIdExistente = pid;
+
+  okEl.textContent = '✅ Cadastro encontrado: ' + pac.nome + ' — dados preenchidos automaticamente.';
+  okEl.style.display = 'block';
+
+  // Atualizar preview do ID
+  const prevEl = document.getElementById('cad-id-preview');
+  const idVal  = document.getElementById('cad-id-valor');
+  if (prevEl && idVal) {
+    prevEl.style.display = 'block';
+    idVal.textContent = pid;
+    document.getElementById('cad-senha-preview').textContent = '(conta existente)';
+  }
+
+  validarCadPac();
+  toast('Dados do paciente carregados!', 'ok');
+}
+
 function abrirCadPac() {
   const m = document.getElementById('modal-cad-pac');
   m.style.display = 'flex';
+  window._cadPacIdExistente = null;
+  // Limpar campos de busca
+  const busErr = document.getElementById('cad-busca-err');
+  const busOk  = document.getElementById('cad-busca-ok');
+  const busId  = document.getElementById('cad-busca-id');
+  if (busErr) busErr.style.display = 'none';
+  if (busOk)  busOk.style.display  = 'none';
+  if (busId)  busId.value = '';
   // Limpar campos
   ['cad-resp-nome','cad-resp-cpf','cad-resp-tel','cad-resp-email',
    'cad-pac-nome','cad-pac-cpf','cad-pac-end','cad-pac-conv','cad-conta-email'].forEach(id => {
@@ -5392,9 +5452,10 @@ function validarCadPac() {
   const ok   = resp.length >= 3 && tel.length >= 10 && nome.length >= 3 && nasc.length === 10 && email.includes('@');
   const btn  = document.getElementById('btn-cad-pac-salvar');
   if (!btn) return;
-  if (ok && !_cadDuplicataId) {
-    // Gera preview do ID se ainda não gerou
-    if (!_cadPacIdGerado) gerarPreviewId(nome, nasc);
+  const temIdExistente = !!window._cadPacIdExistente;
+  if (ok && (!_cadDuplicataId || temIdExistente)) {
+    // Gera preview do ID se ainda não gerou (só para cadastros novos)
+    if (!_cadPacIdGerado && !temIdExistente) gerarPreviewId(nome, nasc);
     btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
   } else {
     btn.disabled = true; btn.style.opacity = '.4'; btn.style.cursor = 'not-allowed';
@@ -5469,19 +5530,26 @@ async function salvarCadastroPac() {
     errEl.style.display = 'block'; return;
   }
 
-  const id = _cadPacIdGerado;
-  // Senha provisória aleatória: Capi + 5 chars alfanuméricos maiúsculos
-  const senhaProvisoria = 'Capi' + Math.random().toString(36).slice(2,7).toUpperCase();
+  // Se encontrou cadastro existente via busca, reusar o ID
+  const id = window._cadPacIdExistente || _cadPacIdGerado;
+  const pacExistente = window._cadPacIdExistente
+    ? await DB.get('pacientes/' + id)
+    : null;
+  // Senha: manter a existente ou gerar nova provisória
+  const senhaProvisoria = pacExistente?.senha || ('Capi' + Math.random().toString(36).slice(2,7).toUpperCase());
+  const senhaJaProvisoria = pacExistente ? pacExistente.senhaProvisoria : true;
 
   const novoPac = {
+    ...(pacExistente || {}), // preserva dados existentes
     id, nome: pacNome, dnasc: pacNasc, sexo: pacSexo,
     cpf: pacCPF, endereco: pacEnd, convenio: pacConv,
     responsavel: respNome, resp_dnasc: respNasc, resp_cpf: respCPF,
     parentesco: respPar, tel_resp: respTel, email_resp: respEmail,
     email_conta: contaEmail,
     senha: senhaProvisoria,
-    senhaProvisoria: true, // flag: precisa trocar na primeira entrada
-    medCRM, criadoEm: new Date().toISOString(),
+    senhaProvisoria: senhaJaProvisoria,
+    medCRM, criadoEm: pacExistente?.criadoEm || new Date().toISOString(),
+    medicosVinculados: { ...(pacExistente?.medicosVinculados||{}), [medCRM]: 'ativo' },
   };
 
   try {
@@ -6065,6 +6133,20 @@ document.getElementById('pac-mes-sel')&&(document.getElementById('pac-mes-sel').
         <div style="font-size:18px;font-weight:900;color:var(--navy)">Cadastro de Paciente</div>
         <div style="font-size:13px;color:var(--muted)">Preencha os dados e um ID único será gerado automaticamente.</div>
       </div>
+    </div>
+
+    <!-- Buscar por ID existente -->
+    <div style="background:#F8FAFF;border:1.5px solid #DBEAFE;border-radius:14px;padding:14px 16px;margin-bottom:20px">
+      <div style="font-size:12px;font-weight:900;color:var(--blue);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">🔍 Paciente já tem cadastro?</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Informe o ID da conta e os dados serão preenchidos automaticamente.</div>
+      <div style="display:flex;gap:8px">
+        <input id="cad-busca-id" type="text" placeholder="ID do paciente (ex.: CPC3A8F2K1)"
+          style="flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'DM Mono',monospace;text-transform:uppercase;outline:none"
+          oninput="this.value=this.value.toUpperCase()">
+        <button onclick="buscarPacPorIdModal()" style="background:var(--blue);color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">Buscar</button>
+      </div>
+      <div id="cad-busca-err" style="display:none;background:#FDEEEE;color:var(--red);border-radius:8px;padding:6px 10px;font-size:12px;margin-top:8px"></div>
+      <div id="cad-busca-ok" style="display:none;background:#F0FFF7;border:1px solid #86EFAC;border-radius:8px;padding:6px 10px;font-size:12px;margin-top:8px;color:#178A4A;font-weight:700"></div>
     </div>
 
     <!-- Responsável Legal -->
