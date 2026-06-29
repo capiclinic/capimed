@@ -2197,7 +2197,7 @@ const db = firebase.database();
 
 // ══ EMAILJS CONFIG ══
 const EMAILJS_SERVICE  = 'service_m597538';
-const EMAILJS_TEMPLATE = 'template_l9kcr65';
+const EMAILJS_TEMPLATE = 'template_vyuteas';
 const EMAILJS_KEY      = 's2qpb-p7CqdfDNgpb';
 emailjs.init(EMAILJS_KEY);
 
@@ -2205,14 +2205,18 @@ emailjs.init(EMAILJS_KEY);
 async function enviarEmail(para, nomeDestinatario, assunto, senha, loginId, tipo) {
   try {
     await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
-      to_email:  para,
+      email:     para,           // {{email}} no template
       to_name:   nomeDestinatario,
+      name:      nomeDestinatario, // {{name}} caso use este
       assunto:   assunto,
+      subject:   assunto,        // {{subject}} caso use este
       senha:     senha,
+      password:  senha,          // {{password}} caso use este
       login_id:  loginId,
-      tipo:      tipo,        // 'paciente' ou 'medico'
+      tipo:      tipo,
       app_name:  'CapiClinic',
       reply_to:  'capiclinic.med@gmail.com',
+      from_name: 'CapiClinic',
     });
     return true;
   } catch(e) {
