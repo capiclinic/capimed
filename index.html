@@ -1429,6 +1429,27 @@ button.export{background:var(--teal);color:white}
 
   <!-- ─── SUB MEUS PACIENTES ─── -->
   <div id="msub-panel-pacs" style="display:none">
+    <!-- Solicitações pendentes de vínculo -->
+    <div class="panel" id="pacs-solicitacoes-panel" style="display:none;margin-bottom:12px">
+      <div class="panel-head"><div><h2>🔔 Solicitações de Vínculo</h2></div><span class="chip chip-blue" id="pacs-sol-count">0</span></div>
+      <div id="pacs-solicitacoes-lista"></div>
+    </div>
+
+    <!-- Vincular paciente pelo ID -->
+    <div class="panel" style="margin-bottom:12px">
+      <div class="panel-head"><div><h2>🔗 Vincular Paciente por ID</h2></div></div>
+      <p class="sub" style="margin-bottom:12px">Se o paciente já criou uma conta no CapiClinic, informe o ID dele para adicioná-lo à sua lista.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input id="vincular-pac-id" type="text" placeholder="ID do paciente (ex.: CPC3A8F2K1)"
+          style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:13px;font-family:'DM Mono',monospace;text-transform:uppercase;outline:none"
+          oninput="this.value=this.value.toUpperCase()">
+        <button class="primary" style="padding:8px 18px" onclick="vincularPacientePorId()">Vincular</button>
+      </div>
+      <div id="vincular-pac-err" style="display:none;background:#FDEEEE;color:var(--red);border-radius:8px;padding:8px 12px;font-size:12.5px;margin-top:8px"></div>
+      <div id="vincular-pac-ok" style="display:none;background:#F0FFF7;border:1.5px solid #86EFAC;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:8px"></div>
+    </div>
+
+    <!-- Lista de pacientes -->
     <div class="panel">
       <div class="panel-head">
         <div><h2>👥 Meus Pacientes</h2><p class="sub">Pacientes acompanhados por você</p></div>
@@ -1539,18 +1560,78 @@ button.export{background:var(--teal);color:white}
 </section>
 <section id="login-pac" class="page">
   <div class="login-wrap">
-    <div class="login-panel">
+    <div class="login-panel" style="max-width:420px">
       <div class="login-icon" style="background:linear-gradient(135deg,#0D9488,#178A4A);border-radius:18px">
         <span style="font-size:32px">👨‍👩‍👧</span>
       </div>
       <div class="login-title">Área do Paciente</div>
-      <div class="login-sub">Acesso fornecido pela clínica.</div>
-      <div id="loginPacErr" class="login-err">Usuário ou senha incorretos.</div>
-      <div class="login-field"><label>Usuário</label><input id="lpUser" type="text" placeholder="" autocomplete="username"></div>
-      <div class="login-field"><label>Senha</label><input id="lpPass" type="password" placeholder="" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLoginPac()"></div>
-      <button class="primary" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#0D9488,#178A4A)" onclick="doLoginPac()">Entrar</button>
-      <div style="text-align:center;margin-top:10px">
-        <button onclick="abrirEsqueciSenhaPac()" style="background:none;border:none;color:var(--blue);font-size:12.5px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline">Esqueci minha senha</button>
+
+      <!-- Tabs: Entrar / Criar conta -->
+      <div style="display:flex;border-bottom:2px solid var(--line);margin-bottom:18px;margin-top:8px">
+        <button id="pac-tab-login" onclick="showPacLoginTab('login')"
+          style="flex:1;background:none;border:none;border-bottom:2.5px solid var(--teal);margin-bottom:-2px;padding:8px 0;font-size:13.5px;font-weight:800;color:var(--teal);cursor:pointer;font-family:'DM Sans',sans-serif">
+          Entrar
+        </button>
+        <button id="pac-tab-criar" onclick="showPacLoginTab('criar')"
+          style="flex:1;background:none;border:none;border-bottom:2.5px solid transparent;margin-bottom:-2px;padding:8px 0;font-size:13.5px;font-weight:800;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+          Criar conta
+        </button>
+      </div>
+
+      <!-- Painel: Entrar -->
+      <div id="pac-panel-login">
+        <div class="login-sub" style="margin-bottom:12px">Use o ID e senha fornecidos pela clínica ou criados no cadastro.</div>
+        <div id="loginPacErr" class="login-err">Usuário ou senha incorretos.</div>
+        <div class="login-field"><label>ID do paciente</label><input id="lpUser" type="text" placeholder="Ex.: CPC3A8F2K1" autocomplete="username" style="font-family:'DM Mono',monospace;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="login-field"><label>Senha</label><input id="lpPass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLoginPac()"></div>
+        <button class="primary" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#0D9488,#178A4A)" onclick="doLoginPac()">Entrar</button>
+        <div style="text-align:center;margin-top:10px">
+          <button onclick="abrirEsqueciSenhaPac()" style="background:none;border:none;color:var(--blue);font-size:12.5px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline">Esqueci minha senha</button>
+        </div>
+      </div>
+
+      <!-- Painel: Criar conta -->
+      <div id="pac-panel-criar" style="display:none">
+        <div class="login-sub" style="margin-bottom:14px">Preencha seus dados para criar uma conta. Você receberá um ID de acesso por e-mail.</div>
+        <div id="pac-criar-err" style="display:none;background:#FDEEEE;color:var(--red);border-radius:8px;padding:8px 12px;font-size:12.5px;margin-bottom:10px"></div>
+        <div id="pac-criar-ok" style="display:none;background:#F0FFF7;border:1.5px solid #86EFAC;border-radius:12px;padding:14px 16px;text-align:center;margin-bottom:12px"></div>
+
+        <!-- Dados do responsável -->
+        <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--teal);margin-bottom:8px">👤 Responsável Legal</div>
+        <div class="login-field"><label>Nome completo *</label><input id="nc-resp-nome" type="text" placeholder="Nome do responsável"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="login-field"><label>Data de nasc.</label><input id="nc-resp-nasc" type="date"></div>
+          <div class="login-field"><label>CPF</label><input id="nc-resp-cpf" type="text" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)"></div>
+        </div>
+        <div class="login-field"><label>Telefone / WhatsApp *</label><input id="nc-resp-tel" type="text" placeholder="(00) 00000-0000" maxlength="16" oninput="maskPhone(this)"></div>
+        <div class="login-field"><label>E-mail *</label><input id="nc-resp-email" type="email" placeholder="seuemail@exemplo.com"></div>
+        <div class="login-field"><label>Parentesco</label>
+          <select id="nc-resp-par" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink)">
+            <option value="">Selecione...</option><option>Mãe</option><option>Pai</option><option>Avó/Avô</option><option>Tutor legal</option><option>Outro</option>
+          </select>
+        </div>
+
+        <!-- Dados do paciente -->
+        <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--blue);margin-bottom:8px;margin-top:12px">🩺 Dados do Paciente</div>
+        <div class="login-field"><label>Nome completo *</label><input id="nc-pac-nome" type="text" placeholder="Nome do paciente"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="login-field"><label>Data de nasc. *</label><input id="nc-pac-nasc" type="date"></div>
+          <div class="login-field"><label>Sexo</label>
+            <select id="nc-pac-sexo" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink)">
+              <option value="">Selecione...</option><option value="M">Masculino</option><option value="F">Feminino</option>
+            </select>
+          </div>
+        </div>
+        <div class="login-field"><label>CPF do paciente</label><input id="nc-pac-cpf" type="text" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)"></div>
+        <div class="login-field"><label>Endereço</label><input id="nc-pac-end" type="text" placeholder="Rua, número, bairro, cidade"></div>
+        <div class="login-field"><label>Convênio</label><input id="nc-pac-conv" type="text" placeholder="Ex.: Unimed, Particular"></div>
+
+        <button class="primary" style="width:100%;margin-top:12px;background:linear-gradient(135deg,#0D9488,#178A4A)" onclick="criarContaPaciente()">
+          ✅ Criar minha conta
+        </button>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">
+          Após o cadastro, seu ID e senha serão enviados ao e-mail informado.
+        </div>
       </div>
     </div>
   </div>
@@ -1564,6 +1645,7 @@ button.export{background:var(--teal);color:white}
     <button class="step-btn" id="psub1" onclick="showPacSub(1)">📈 Crescimento</button>
     <button class="step-btn" id="psub2" onclick="showPacSub(2)">📅 Agendamentos</button>
     <button class="step-btn" id="psub3" onclick="showPacSub(3)">📄 Arquivos</button>
+    <button class="step-btn" id="psub-med" onclick="showPacSub('med')">🩺 Meu Médico</button>
     <button class="step-btn" id="psub4" onclick="showPacSub(4)">🦫 Capivara Virtual</button>
     <div style="margin-left:auto;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:8px">
       <span id="pac-logged-name" style="font-weight:700;color:var(--navy)"></span>
@@ -1716,6 +1798,22 @@ button.export{background:var(--teal);color:white}
         <div id="pac-arq-extra"></div>
       </div>
     </div>
+
+  <!-- ─── PSUB MED: MEU MÉDICO ─── -->
+  <div id="psub-panel-med" style="display:none">
+    <div class="panel" style="margin-bottom:12px">
+      <div class="panel-head"><div><h2>🩺 Solicitar vínculo com médico</h2></div></div>
+      <p class="sub" style="margin-bottom:14px">Busque um médico disponível na CapiClinic e solicite o vínculo. O médico receberá sua solicitação e poderá aceitar.</p>
+      <div id="pac-medicos-lista" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><div><h2>👨‍⚕️ Meus Médicos Vinculados</h2></div></div>
+      <div id="pac-medicos-vinculados">
+        <div style="color:var(--muted);font-size:13px;padding:12px 0;text-align:center">Nenhum médico vinculado ainda.</div>
+      </div>
+    </div>
+  </div>
 
   <!-- ─── PSUB 4: CAPIVARA VIRTUAL ─── -->
   <div id="psub-panel-4" style="display:none">
@@ -2634,7 +2732,7 @@ function showMedSub(n) {
   if (n===1)       renderHistorico();
   if (n===2)       renderMedCal();
   if (n===3)       renderArquivosMed();
-  if (n==='pacs')  renderMeusPacientes('');
+  if (n==='pacs')  { renderMeusPacientes(''); renderSolicitacoesMedico(); }
   if (n==='admin') { renderAdminPacientes(''); renderAdminMedicos(); }
 }
 
@@ -2769,26 +2867,343 @@ function showAtendSub(n) {
   currentAtendSub = n;
 }
 
+
+// ═══════════════════════════ CRIAR CONTA — PACIENTE (CADASTRO LIVRE) ═══════════════════════════
+function showPacLoginTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('pac-panel-login').style.display = isLogin ? '' : 'none';
+  document.getElementById('pac-panel-criar').style.display = isLogin ? 'none' : '';
+  const tl = document.getElementById('pac-tab-login');
+  const tc = document.getElementById('pac-tab-criar');
+  if (tl) { tl.style.borderBottomColor = isLogin ? 'var(--teal)' : 'transparent'; tl.style.color = isLogin ? 'var(--teal)' : 'var(--muted)'; }
+  if (tc) { tc.style.borderBottomColor = isLogin ? 'transparent' : 'var(--teal)'; tc.style.color = isLogin ? 'var(--muted)' : 'var(--teal)'; }
+  if (!isLogin) document.getElementById('nc-resp-nome').focus();
+}
+
+async function criarContaPaciente() {
+  const errEl = document.getElementById('pac-criar-err');
+  const okEl  = document.getElementById('pac-criar-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  const respNome  = (document.getElementById('nc-resp-nome')?.value||'').trim();
+  const respNasc  = document.getElementById('nc-resp-nasc')?.value||'';
+  const respCPF   = (document.getElementById('nc-resp-cpf')?.value||'').trim();
+  const respTel   = (document.getElementById('nc-resp-tel')?.value||'').trim();
+  const respEmail = (document.getElementById('nc-resp-email')?.value||'').trim().toLowerCase();
+  const respPar   = document.getElementById('nc-resp-par')?.value||'';
+  const pacNome   = (document.getElementById('nc-pac-nome')?.value||'').trim();
+  const pacNasc   = document.getElementById('nc-pac-nasc')?.value||'';
+  const pacSexo   = document.getElementById('nc-pac-sexo')?.value||'';
+  const pacCPF    = (document.getElementById('nc-pac-cpf')?.value||'').trim();
+  const pacEnd    = (document.getElementById('nc-pac-end')?.value||'').trim();
+  const pacConv   = (document.getElementById('nc-pac-conv')?.value||'').trim();
+
+  if (!respNome) { errEl.textContent = 'Informe o nome do responsável.'; errEl.style.display = 'block'; return; }
+  if (!respTel.replace(/\D/g,'').length >= 10) { errEl.textContent = 'Informe um telefone válido.'; errEl.style.display = 'block'; return; }
+  if (!respEmail.includes('@')) { errEl.textContent = 'Informe um e-mail válido.'; errEl.style.display = 'block'; return; }
+  if (!pacNome) { errEl.textContent = 'Informe o nome do paciente.'; errEl.style.display = 'block'; return; }
+  if (!pacNasc) { errEl.textContent = 'Informe a data de nascimento do paciente.'; errEl.style.display = 'block'; return; }
+
+  // Verificar duplicata por nome + nascimento
+  const existente = await buscarPacienteCadastrado(pacNome, pacNasc);
+  if (existente) {
+    errEl.textContent = `Já existe um cadastro para "${pacNome}" (${fmtDate(pacNasc)}). Caso já tenha conta, use a aba "Entrar".`;
+    errEl.style.display = 'block'; return;
+  }
+
+  // Verificar se e-mail já está em uso
+  const pacs = await DB.get('pacientes') || {};
+  for (const dados of Object.values(pacs)) {
+    if ((dados.email_conta||'').toLowerCase() === respEmail) {
+      errEl.textContent = 'Este e-mail já está cadastrado. Use "Esqueci minha senha" se perdeu o acesso.';
+      errEl.style.display = 'block'; return;
+    }
+  }
+
+  // Gerar ID único
+  let novoId;
+  do { novoId = gerarNovoID(); } while (pacs[novoId]);
+
+  const senhaProvisoria = 'Capi' + Math.random().toString(36).slice(2,7).toUpperCase();
+
+  const novoPac = {
+    id: novoId,
+    nome: pacNome, dnasc: pacNasc, sexo: pacSexo,
+    cpf: pacCPF, endereco: pacEnd, convenio: pacConv,
+    responsavel: respNome, resp_dnasc: respNasc, resp_cpf: respCPF,
+    parentesco: respPar, tel_resp: respTel,
+    email_resp: respEmail, email_conta: respEmail,
+    senha: senhaProvisoria, senhaProvisoria: true,
+    medCRM: '', // sem médico vinculado ainda
+    medicosVinculados: {},
+    criadoEm: new Date().toISOString(),
+    cadastroTipo: 'autonomo', // cadastrado pelo próprio responsável
+  };
+
+  try {
+    await DB.set('pacientes/' + novoId, novoPac);
+    const pl = JSON.parse(localStorage.getItem('capikids_pacientes')||'{}');
+    pl[novoId] = novoPac;
+    localStorage.setItem('capikids_pacientes', JSON.stringify(pl));
+
+    // Envia e-mail de boas-vindas
+    const nomeResp = respNome.split(' ').slice(0,2).join(' ');
+    const emailOk = await enviarEmail(
+      respEmail, nomeResp,
+      'Bem-vindo ao CapiClinic — seus dados de acesso',
+      senhaProvisoria, novoId, 'paciente'
+    );
+
+    okEl.innerHTML = `
+      <div style="font-size:28px;margin-bottom:8px">✅</div>
+      <div style="font-size:15px;font-weight:900;color:var(--navy);margin-bottom:6px">Conta criada com sucesso!</div>
+      ${emailOk
+        ? `<div style="font-size:13px;color:var(--muted)">📧 Seus dados de acesso foram enviados para <b>${respEmail}</b>.<br>Verifique sua caixa de entrada (e spam).</div>`
+        : `<div style="font-size:13px;color:var(--muted)">Seus dados de acesso:<br>
+           <b>ID:</b> <span style="font-family:'DM Mono',monospace">${novoId}</span><br>
+           <b>Senha:</b> <span style="font-family:'DM Mono',monospace">${senhaProvisoria}</span><br>
+           <span style="font-size:11px">(Anote — o e-mail automático falhou)</span></div>`
+      }
+      <div style="margin-top:12px">
+        <button onclick="showPacLoginTab('login')" style="background:linear-gradient(135deg,#0D9488,#178A4A);color:white;border:none;border-radius:10px;padding:8px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+          Ir para o login
+        </button>
+      </div>`;
+    okEl.style.display = 'block';
+
+    // Limpar formulário
+    ['nc-resp-nome','nc-resp-cpf','nc-resp-tel','nc-resp-email',
+     'nc-pac-nome','nc-pac-cpf','nc-pac-end','nc-pac-conv'].forEach(id => {
+       const el = document.getElementById(id); if (el) el.value = '';
+    });
+    ['nc-resp-nasc','nc-pac-nasc'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['nc-resp-par','nc-pac-sexo'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+
+  } catch(e) {
+    errEl.textContent = 'Erro ao criar conta: ' + e.message;
+    errEl.style.display = 'block'; console.error(e);
+  }
+}
+
+// ═══════════════════════════ MÉDICOS DISPONÍVEIS — PACIENTE ═══════════════════════════
+async function renderPacMedicos() {
+  // Lista de médicos disponíveis para solicitar vínculo
+  const listaEl = document.getElementById('pac-medicos-lista');
+  const vinculadosEl = document.getElementById('pac-medicos-vinculados');
+  if (!listaEl || !vinculadosEl) return;
+
+  listaEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px 0;text-align:center">⏳ Carregando médicos…</div>';
+  vinculadosEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px 0;text-align:center">⏳ Carregando…</div>';
+
+  const [meds, pacDados] = await Promise.all([
+    DB.get('medicos') || {},
+    pacId ? DB.get('pacientes/' + pacId) : Promise.resolve(null)
+  ]);
+
+  const medsData = meds || {};
+  const vinculados = pacDados?.medicosVinculados || {};
+  const solicitacoes = pacDados?.solicitacoesMedico || {};
+
+  // Médicos vinculados
+  const vinculadosCRMs = Object.keys(vinculados).filter(crm => vinculados[crm] === 'ativo');
+  if (vinculadosCRMs.length) {
+    vinculadosEl.innerHTML = vinculadosCRMs.map(crm => {
+      const med = medsData[crm] || {};
+      const nome = med.nome || MED_NAMES[crm] || 'Dr. ' + crm;
+      const esp  = med.especialidade || 'Pediatria';
+      return `<div style="background:white;border:1.5px solid #86EFAC;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+        <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#F0FFF7,#86EFAC);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🩺</div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:800;color:var(--navy)">${nome}</div><div style="font-size:12px;color:var(--muted)">${esp} · CRM-SP ${crm}</div></div>
+        <span style="background:#F0FFF7;color:#178A4A;font-size:11px;font-weight:800;padding:4px 10px;border-radius:20px">✅ Vinculado</span>
+      </div>`;
+    }).join('');
+  } else {
+    vinculadosEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px 0;text-align:center">Nenhum médico vinculado ainda.</div>';
+  }
+
+  // Lista de médicos disponíveis para solicitar
+  const todosMeds = Object.entries(MED_NAMES);
+  if (!todosMeds.length) {
+    listaEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px 0;text-align:center">Nenhum médico cadastrado.</div>';
+    return;
+  }
+
+  listaEl.innerHTML = todosMeds.map(([crm, nomeCompleto]) => {
+    const med = medsData[crm] || {};
+    const esp = med.especialidade || 'Pediatria';
+    const jaVinculado = vinculados[crm] === 'ativo';
+    const pendente = solicitacoes[crm] === 'pendente';
+    const nome = (med.nome || nomeCompleto).split('(')[0].trim();
+
+    let botao = '';
+    if (jaVinculado) {
+      botao = `<span style="background:#F0FFF7;color:#178A4A;font-size:11px;font-weight:800;padding:5px 12px;border-radius:20px">✅ Vinculado</span>`;
+    } else if (pendente) {
+      botao = `<span style="background:#FFF5DF;color:#E8A800;font-size:11px;font-weight:800;padding:5px 12px;border-radius:20px">⏳ Solicitado</span>`;
+    } else {
+      botao = `<button onclick="solicitarVinculoMedico('${crm}')"
+        style="background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:none;border-radius:10px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+        + Solicitar vínculo
+      </button>`;
+    }
+
+    return `<div style="background:white;border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#EAF2FF,#B5D4F4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🩺</div>
+      <div style="flex:1;min-width:120px"><div style="font-size:14px;font-weight:800;color:var(--navy)">${nome}</div><div style="font-size:12px;color:var(--muted)">${esp} · CRM-SP ${crm}</div></div>
+      ${botao}
+    </div>`;
+  }).join('');
+}
+
+async function solicitarVinculoMedico(crm) {
+  if (!pacId) { toast('Faça login para solicitar vínculo.', 'err'); return; }
+  try {
+    // Salva solicitação no paciente e no médico
+    await DB.set('pacientes/' + pacId + '/solicitacoesMedico/' + crm, 'pendente');
+    await DB.set('medicos/' + crm + '/solicitacoesPaciente/' + pacId, {
+      pacId, nome: pacName, data: new Date().toISOString(), status: 'pendente'
+    });
+    toast('✅ Solicitação enviada! Aguarde o médico aprovar.', 'ok');
+    renderPacMedicos(); // atualiza a lista
+  } catch(e) {
+    toast('Erro ao enviar solicitação.', 'err'); console.error(e);
+  }
+}
+
+// ═══════════════════════════ SOLICITAÇÕES DE VÍNCULO — MÉDICO ═══════════════════════════
+async function renderSolicitacoesMedico() {
+  if (!medCRM) return;
+  const panel = document.getElementById('pacs-solicitacoes-panel');
+  const lista  = document.getElementById('pacs-solicitacoes-lista');
+  const count  = document.getElementById('pacs-sol-count');
+  if (!panel || !lista) return;
+
+  const solicitacoes = await DB.get('medicos/' + medCRM + '/solicitacoesPaciente') || {};
+  const pendentes = Object.entries(solicitacoes).filter(([,v]) => v.status === 'pendente');
+
+  if (!pendentes.length) { panel.style.display = 'none'; return; }
+
+  panel.style.display = 'block';
+  if (count) count.textContent = pendentes.length;
+
+  lista.innerHTML = pendentes.map(([pid, sol]) => `
+    <div style="background:#FFF5DF;border:1px solid #E8CC80;border-radius:12px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-size:22px">👤</div>
+      <div style="flex:1;min-width:120px">
+        <div style="font-size:14px;font-weight:800;color:var(--navy)">${sol.nome||pid}</div>
+        <div style="font-size:11px;color:var(--muted)">ID: <span style="font-family:'DM Mono',monospace">${pid}</span> · ${fmtDate(sol.data)}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="responderSolicitacao('${pid}','aceitar')"
+          style="background:linear-gradient(135deg,var(--green),#0f6b3a);color:white;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+          ✅ Aceitar
+        </button>
+        <button onclick="responderSolicitacao('${pid}','rejeitar')"
+          style="background:#FDEEEE;color:var(--red);border:1px solid #FCA5A5;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+          ✕ Recusar
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+async function responderSolicitacao(pid, acao) {
+  const status = acao === 'aceitar' ? 'ativo' : 'rejeitado';
+  try {
+    // Atualiza no médico
+    await DB.set('medicos/' + medCRM + '/solicitacoesPaciente/' + pid + '/status', status);
+    // Atualiza no paciente
+    await DB.set('pacientes/' + pid + '/solicitacoesMedico/' + medCRM, status === 'ativo' ? 'aceito' : 'rejeitado');
+    if (status === 'ativo') {
+      await DB.set('pacientes/' + pid + '/medicosVinculados/' + medCRM, 'ativo');
+    }
+    toast(acao === 'aceitar' ? '✅ Paciente vinculado!' : 'Solicitação recusada.', acao === 'aceitar' ? 'ok' : 'info');
+    renderSolicitacoesMedico();
+    renderMeusPacientes('');
+  } catch(e) {
+    toast('Erro ao processar solicitação.', 'err'); console.error(e);
+  }
+}
+
+// ═══════════════════════════ VINCULAR PACIENTE POR ID — MÉDICO ═══════════════════════════
+async function vincularPacientePorId() {
+  const pid    = (document.getElementById('vincular-pac-id')?.value||'').trim().toUpperCase();
+  const errEl  = document.getElementById('vincular-pac-err');
+  const okEl   = document.getElementById('vincular-pac-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  if (!pid) { errEl.textContent = 'Informe o ID do paciente.'; errEl.style.display = 'block'; return; }
+
+  try {
+    const pac = await DB.get('pacientes/' + pid);
+    if (!pac) { errEl.textContent = 'Paciente não encontrado com este ID.'; errEl.style.display = 'block'; return; }
+
+    // Verifica se já vinculado
+    if (pac.medicosVinculados && pac.medicosVinculados[medCRM] === 'ativo') {
+      okEl.innerHTML = `✅ <b>${pac.nome}</b> já está vinculado à sua lista.`;
+      okEl.style.display = 'block'; return;
+    }
+
+    // Vincula diretamente (médico tem prioridade)
+    await DB.set('pacientes/' + pid + '/medicosVinculados/' + medCRM, 'ativo');
+    await DB.set('medicos/' + medCRM + '/solicitacoesPaciente/' + pid, {
+      pacId: pid, nome: pac.nome, data: new Date().toISOString(), status: 'ativo'
+    });
+
+    okEl.innerHTML = `✅ <b>${pac.nome}</b> vinculado com sucesso à sua lista de pacientes!`;
+    okEl.style.display = 'block';
+    document.getElementById('vincular-pac-id').value = '';
+    renderMeusPacientes('');
+    toast('✅ ' + pac.nome + ' adicionado!', 'ok');
+  } catch(e) {
+    errEl.textContent = 'Erro ao vincular: ' + e.message;
+    errEl.style.display = 'block'; console.error(e);
+  }
+}
+
 // ═══════════════════════════ MEUS PACIENTES ═══════════════════════════
-function renderMeusPacientes(filtro) {
+async function renderMeusPacientes(filtro) {
+  const el = document.getElementById('pacs-lista');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">⏳ Carregando…</div>';
+
+  // Busca pacientes vinculados no Firebase
+  const todasPacs = await DB.get('pacientes') || {};
+  const vinculadosFirebase = Object.values(todasPacs).filter(p =>
+    p && p.medicosVinculados && p.medicosVinculados[medCRM] === 'ativo'
+  );
+
+  // Também pega do localStorage (consultas antigas)
   const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
-  // Agrupar por nome, filtrar pelo médico logado
   const mapa = {};
   arr.filter(c => !c.medCRM || c.medCRM === medCRM).forEach(c => {
     if (!c.nome) return;
     if (!mapa[c.nome] || new Date(c.timestamp) > new Date(mapa[c.nome].ultima.timestamp)) {
-      if (!mapa[c.nome]) mapa[c.nome] = { consultas: [], ultima: null };
+      if (!mapa[c.nome]) mapa[c.nome] = { consultas: [], ultima: null, pacData: null };
       mapa[c.nome].ultima = c;
     }
     mapa[c.nome].consultas = (mapa[c.nome].consultas||[]);
     mapa[c.nome].consultas.push(c);
   });
+
+  // Adiciona vinculados do Firebase que não estão no localStorage
+  vinculadosFirebase.forEach(p => {
+    if (!mapa[p.nome]) {
+      mapa[p.nome] = { consultas: [], ultima: {
+        nome: p.nome, dnasc: p.dnasc, sexo: p.sexo||'',
+        idade: calcIdade(p.dnasc), dt_consulta: p.criadoEm,
+        timestamp: p.criadoEm, alergias: '', cids: '[]', prescricao: '[]',
+        id: p.id
+      }, pacData: p };
+    } else {
+      mapa[p.nome].pacData = p;
+      if (p.id) mapa[p.nome].ultima.id = p.id;
+    }
+  });
+
   const pacientes = Object.entries(mapa)
     .filter(([nome]) => !filtro || nome.toLowerCase().includes(filtro.toLowerCase()))
     .sort(([a],[b]) => a.localeCompare(b));
 
-  const el = document.getElementById('pacs-lista');
-  if (!el) return;
   if (!pacientes.length) {
     el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:24px 0;text-align:center">Nenhum paciente encontrado.</div>';
     return;
@@ -2800,11 +3215,13 @@ function renderMeusPacientes(filtro) {
     const idade = ult.idade||'—';
     const sexo  = ult.sexo||'';
     const alerg = ult.alergias&&ult.alergias.toUpperCase()!=='NAIDA'&&ult.alergias.trim();
+    const pacId_ = ult.id || dados.pacData?.id || '';
     return `<div style="border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;background:white;display:flex;align-items:center;gap:14px;flex-wrap:wrap;cursor:pointer;transition:.12s" onmouseover="this.style.boxShadow='var(--shadow)'" onmouseout="this.style.boxShadow='none'" onclick="abrirPacDet('${nome.replace(/'/g,"\\'")}')">
       <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#EAF2FF,#B5D4F4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${sexo==='Feminino'?'👧':sexo==='Masculino'?'👦':'👤'}</div>
       <div style="flex:1;min-width:140px">
         <div style="font-size:15px;font-weight:900;color:var(--navy)">${nome}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${idade}${sexo?' · '+sexo:''} ${alerg?'· <span style="color:var(--red);font-weight:700">⚠️ Alergia</span>':''}</div>
+        ${pacId_?`<div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px">${pacId_}</div>`:''}
       </div>
       <div style="font-size:12px;color:var(--muted);min-width:140px">
         <div style="color:var(--navy);font-weight:700">Última: ${fmtDate(ult.dt_consulta||ult.timestamp)}</div>
@@ -3142,15 +3559,18 @@ async function salvarRetorno() {
   }, 500);
 }
 function showPacSub(n) {
-  [0,1,2,3,4].forEach(i => {
+  [...[0,1,2,3,4],'med'].forEach(i => {
     const p = document.getElementById('psub-panel-'+i);
-    const b = document.getElementById('psub'+i);
+    const b = document.getElementById('psub'+i) || document.getElementById('psub-med');
     if (p) p.style.display = i===n ? 'block' : 'none';
-    if (b) b.classList.toggle('active', i===n);
+    if (b && (i===n || b.id==='psub-med') && i!=='med') b.classList.toggle('active', i===n);
+    if (i==='med') { const bm=document.getElementById('psub-med'); if(bm) bm.classList.toggle('active',n==='med'); }
   });
   currentPacSub = n;
   if (n===1) initGrowthChartPac();
-  if (n===4) renderCapivara(); // async — não precisa await aqui
+  if (n===3) renderDocsPacResponsavel();
+  if (n==='med') renderPacMedicos();
+  if (n===4) renderCapivara();
 }
 
 // ═══════════════════════════ CAPIVARA VIRTUAL ═══════════════════════════
