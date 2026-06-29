@@ -212,6 +212,7 @@ button.export{background:var(--teal);color:white}
 @keyframes iatyping{from{opacity:.3;transform:translateY(0)}to{opacity:1;transform:translateY(-4px)}}
 /* ── RESPONSIVE ── */
 @media(max-width:1080px){.doc-grid,.meta,.file-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){#med-profile-row{grid-template-columns:1fr!important}}
 @media(max-width:680px){.doc-grid,.meta,.meta-3,.meta-2,.exam-grid,.file-grid{grid-template-columns:1fr}.vitals-row{margin-left:0}.home-capy{display:none}}
 @media(max-width:760px){.hero{padding:0 12px}.hero-inner{padding:8px 0;gap:6px 0}.logo-area{max-width:160px;margin-right:10px}.tabs{width:100%;flex:1 1 100%;height:46px}.tab{padding:0 12px;font-size:12px}main{padding:14px 10px}.panel{padding:14px;border-radius:14px}.home-hero{padding:28px 20px}.home-hero h2{font-size:20px}#contato>div{grid-template-columns:1fr!important}}
 </style>
@@ -524,44 +525,86 @@ button.export{background:var(--teal);color:white}
 </section>
 <section id="login-med" class="page">
   <div class="login-wrap">
-    <div class="login-panel">
+    <div class="login-panel" style="max-width:440px">
       <div class="login-icon">
-        <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+        <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" width="56" height="56">
           <ellipse cx="40" cy="58" rx="22" ry="20" fill="#f0f0f0" stroke="#ccc" stroke-width="1"/>
           <path d="M30 45 L40 50 L50 45 L50 72 L30 72 Z" fill="#e8e8e8" stroke="#ccc" stroke-width=".8"/>
-          <rect x="43" y="56" width="8" height="7" rx="2" fill="#d0d0d0" stroke="#bbb" stroke-width=".8"/>
+          <rect x="43" y="56" width="8" height="7" rx="2" fill="#d0d0d0"/>
           <rect x="45.5" y="58" width="3" height="1" rx=".5" fill="#E54B4B"/>
           <rect x="46.5" y="57" width="1" height="3" rx=".5" fill="#E54B4B"/>
           <ellipse cx="40" cy="38" rx="17" ry="14" fill="#8B4513"/>
           <ellipse cx="40" cy="22" rx="14" ry="11" fill="#8B4513"/>
           <ellipse cx="40" cy="27" rx="8" ry="5" fill="#7A3B10"/>
-          <ellipse cx="37.5" cy="26.5" rx="1.2" ry=".9" fill="#5A2A08"/>
-          <ellipse cx="42.5" cy="26.5" rx="1.2" ry=".9" fill="#5A2A08"/>
-          <circle cx="34.5" cy="20" r="2.5" fill="#2c1a08"/>
-          <circle cx="45.5" cy="20" r="2.5" fill="#2c1a08"/>
-          <circle cx="35" cy="19.5" r=".9" fill="white"/>
-          <circle cx="46" cy="19.5" r=".9" fill="white"/>
-          <ellipse cx="28" cy="16" rx="4" ry="3" fill="#7A3B10"/>
-          <ellipse cx="52" cy="16" rx="4" ry="3" fill="#7A3B10"/>
+          <circle cx="34.5" cy="20" r="2.5" fill="#2c1a08"/><circle cx="45.5" cy="20" r="2.5" fill="#2c1a08"/>
+          <circle cx="35" cy="19.5" r=".9" fill="white"/><circle cx="46" cy="19.5" r=".9" fill="white"/>
+          <ellipse cx="28" cy="16" rx="4" ry="3" fill="#7A3B10"/><ellipse cx="52" cy="16" rx="4" ry="3" fill="#7A3B10"/>
           <path d="M33 30 Q27 35 28 42 Q28 48 33 48" fill="none" stroke="#2C3E6B" stroke-width="1.8" stroke-linecap="round"/>
           <path d="M47 30 Q53 35 52 42 Q52 48 47 48" fill="none" stroke="#2C3E6B" stroke-width="1.8" stroke-linecap="round"/>
           <ellipse cx="40" cy="48" rx="5" ry="3.5" fill="#2C3E6B"/>
           <circle cx="40" cy="48" r="2.5" fill="#3A5099"/>
-          <circle cx="33" cy="29.5" r="2" fill="#2C3E6B"/>
-          <circle cx="47" cy="29.5" r="2" fill="#2C3E6B"/>
+          <circle cx="33" cy="29.5" r="2" fill="#2C3E6B"/><circle cx="47" cy="29.5" r="2" fill="#2C3E6B"/>
         </svg>
       </div>
       <div class="login-title">Área do Médico</div>
-      <div class="login-sub">Acesso restrito aos profissionais cadastrados.</div>
-      <div id="loginMedErr" class="login-err">Login ou senha incorretos.</div>
-      <div class="login-field"><label>Login</label><input id="lmUser" type="text" placeholder="" autocomplete="username"></div>
-      <div class="login-field"><label>Senha</label><input id="lmPass" type="password" placeholder="" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLoginMed()"></div>
-      <button class="primary" style="width:100%;margin-top:8px" onclick="doLoginMed()">Entrar</button>
-      <div style="text-align:center;margin-top:14px">
-        <a href="javascript:void(0)" onclick="abrirEsqueciSenha()"
-           style="font-size:12.5px;color:var(--blue);font-weight:700;text-decoration:none;cursor:pointer">
-          Esqueci minha senha
-        </a>
+
+      <!-- Tabs Entrar / Criar conta -->
+      <div style="display:flex;border-bottom:2px solid var(--line);margin-bottom:18px;margin-top:8px">
+        <button id="med-tab-login" onclick="showMedLoginTab('login')"
+          style="flex:1;background:none;border:none;border-bottom:2.5px solid var(--blue);margin-bottom:-2px;padding:8px 0;font-size:13.5px;font-weight:800;color:var(--blue);cursor:pointer;font-family:'DM Sans',sans-serif">
+          Entrar
+        </button>
+        <button id="med-tab-criar" onclick="showMedLoginTab('criar')"
+          style="flex:1;background:none;border:none;border-bottom:2.5px solid transparent;margin-bottom:-2px;padding:8px 0;font-size:13.5px;font-weight:800;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif">
+          Criar conta
+        </button>
+      </div>
+
+      <!-- Painel: Entrar -->
+      <div id="med-panel-login">
+        <div class="login-sub" style="margin-bottom:12px">Acesso restrito aos profissionais cadastrados.</div>
+        <div id="loginMedErr" class="login-err">Login ou senha incorretos.</div>
+        <div class="login-field"><label>CRM ou E-mail</label><input id="lmUser" type="text" placeholder="000000 ou email@exemplo.com" autocomplete="username"></div>
+        <div class="login-field"><label>Senha</label><input id="lmPass" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLoginMed()"></div>
+        <button class="primary" style="width:100%;margin-top:8px" onclick="doLoginMed()">Entrar</button>
+        <div style="text-align:center;margin-top:12px">
+          <a href="javascript:void(0)" onclick="abrirEsqueciSenha()"
+             style="font-size:12.5px;color:var(--blue);font-weight:700;text-decoration:none;cursor:pointer">
+            Esqueci minha senha
+          </a>
+        </div>
+      </div>
+
+      <!-- Painel: Criar conta -->
+      <div id="med-panel-criar" style="display:none">
+        <div class="login-sub" style="margin-bottom:14px">Preencha seus dados para solicitar cadastro. Um administrador aprovará seu acesso.</div>
+        <div id="med-criar-err" style="display:none;background:#FDEEEE;color:var(--red);border-radius:8px;padding:8px 12px;font-size:12.5px;margin-bottom:10px"></div>
+        <div id="med-criar-ok" style="display:none;background:#F0FFF7;border:1.5px solid #86EFAC;border-radius:12px;padding:14px 16px;text-align:center;margin-bottom:12px"></div>
+        <div class="login-field"><label>Nome completo *</label><input id="nm-nome" type="text" placeholder="Dr(a). Nome Sobrenome"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="login-field"><label>CRM *</label><input id="nm-crm" type="text" placeholder="000000" maxlength="10"></div>
+          <div class="login-field"><label>Estado *</label>
+            <select id="nm-uf" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink)">
+              <option value="SP" selected>SP</option><option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option><option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option><option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option><option>TO</option>
+            </select>
+          </div>
+        </div>
+        <div class="login-field"><label>Especialidade *</label>
+          <select id="nm-esp" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink)">
+            <option value="">Selecione...</option>
+            <option>Pediatria</option><option>Neonatologia</option><option>Cardiologia Pediátrica</option>
+            <option>Neurologia Pediátrica</option><option>Pneumologia Pediátrica</option>
+            <option>Gastroenterologia Pediátrica</option><option>Endocrinologia Pediátrica</option>
+            <option>Oncologia Pediátrica</option><option>Clínica Geral</option><option>Outra</option>
+          </select>
+        </div>
+        <div class="login-field"><label>E-mail *</label><input id="nm-email" type="email" placeholder="seuemail@exemplo.com"></div>
+        <div class="login-field"><label>Senha * (mín. 6 caracteres)</label><input id="nm-senha" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>
+        <div class="login-field"><label>Confirmar senha *</label><input id="nm-senha2" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" onkeydown="if(event.key==='Enter')cadastrarMedico()"></div>
+        <button class="primary" style="width:100%;margin-top:12px" onclick="cadastrarMedico()">📋 Solicitar cadastro</button>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">
+          Após o envio, um administrador aprovará seu acesso em até 24h.
+        </div>
       </div>
     </div>
   </div>
@@ -571,7 +614,10 @@ button.export{background:var(--teal);color:white}
 <section id="medicos" class="page">
 
   <!-- ══ CABEÇALHO DO PROFISSIONAL — acima de todas as abas ══ -->
-  <div id="med-profile-card" style="background:white;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:20px 24px;margin-bottom:16px">
+  <!-- Perfil + Atividades lado a lado -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px" id="med-profile-row">
+
+  <div id="med-profile-card" style="background:white;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:20px 24px">
 
     <!-- ── MODO VISUALIZAÇÃO ── -->
     <div id="med-view-mode" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
@@ -712,17 +758,56 @@ button.export{background:var(--teal);color:white}
     </div>
   </div>
 
+  <!-- ── PAINEL DE ATIVIDADES ── -->
+  <div id="med-atividades-card" style="background:white;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:20px 24px;display:flex;flex-direction:column;gap:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:900;color:var(--navy)">📊 Atividades do mês</div>
+        <div id="med-atv-periodo" style="font-size:11px;color:var(--muted);margin-top:2px"></div>
+      </div>
+      <button onclick="abrirModalAtividades()" style="background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:800;color:var(--blue);cursor:pointer;font-family:'DM Sans',sans-serif">
+        📈 Ver detalhes
+      </button>
+    </div>
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="med-atv-kpis">
+      <div style="background:var(--soft);border-radius:12px;padding:12px 14px">
+        <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Consultas</div>
+        <div id="atv-consultas" style="font-size:24px;font-weight:900;color:var(--navy)">—</div>
+      </div>
+      <div style="background:#F0FFF7;border-radius:12px;padding:12px 14px">
+        <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Retornos</div>
+        <div id="atv-retornos" style="font-size:24px;font-weight:900;color:var(--teal)">—</div>
+      </div>
+      <div style="background:#EAF2FF;border-radius:12px;padding:12px 14px">
+        <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Pacientes únicos</div>
+        <div id="atv-pacientes" style="font-size:24px;font-weight:900;color:var(--blue)">—</div>
+      </div>
+      <div style="background:#FFF5DF;border-radius:12px;padding:12px 14px">
+        <div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Novos pacientes</div>
+        <div id="atv-novos" style="font-size:24px;font-weight:900;color:#E8A800">—</div>
+      </div>
+    </div>
+    <!-- Mini gráfico de barras (7 dias) -->
+    <div style="margin-top:14px">
+      <div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Consultas por dia (últimos 7 dias)</div>
+      <div id="med-atv-minibars" style="display:flex;align-items:flex-end;gap:4px;height:48px"></div>
+      <div id="med-atv-minilabels" style="display:flex;gap:4px;margin-top:4px"></div>
+    </div>
+  </div>
+
+  </div><!-- /med-profile-row -->
+
   <!-- Sub-tabs médico — abaixo do perfil -->
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-    <div style="position:relative">
-      <button class="step-btn active" id="msub-atend" onclick="showMedSub('atend')">🩺 Atendimento</button>
-    </div>
+    <button class="step-btn" onclick="abrirCadPac()" style="color:var(--green);border-color:rgba(23,138,74,.3);background:#F0FFF7">👶 Cadastrar Paciente</button>
+    <button class="step-btn active" id="msub-atend" onclick="showMedSub('atend')">🩺 Atendimento</button>
     <button class="step-btn" id="msub-tele" onclick="showMedSub('tele')">📹 Tele-atendimento</button>
     <button class="step-btn" id="msub-pacs" onclick="showMedSub('pacs')">👥 Meus Pacientes</button>
-    <button class="step-btn" onclick="abrirCadPac()" style="color:var(--green);border-color:rgba(23,138,74,.3);background:#F0FFF7">👶 Cadastrar Paciente</button>
     <button class="step-btn" id="msub1" onclick="showMedSub(1)">📁 Histórico</button>
     <button class="step-btn" id="msub2" onclick="showMedSub(2)">📅 Agenda</button>
     <button class="step-btn" id="msub3" onclick="showMedSub(3)">📤 Arquivos</button>
+    <button class="step-btn" id="msub-pagina" onclick="showMedSub('pagina')">🌐 Minha Página</button>
     <!-- Aba Admin: visível apenas para o CRM 239138 -->
     <button class="step-btn" id="msub-admin" onclick="showMedSub('admin')"
       style="display:none;background:linear-gradient(135deg,#0B1F3A,#143B68);color:white;border-color:#143B68">
@@ -1515,6 +1600,77 @@ button.export{background:var(--teal);color:white}
     </div>
   </div>
 
+  <!-- ─── SUB PÁGINA DO MÉDICO ─── -->
+  <div id="msub-panel-pagina" style="display:none">
+
+    <!-- Cabeçalho com preview / edição -->
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+      <div>
+        <h2 style="margin:0;font-size:18px;color:var(--navy)">🌐 Minha Página</h2>
+        <p class="sub" style="margin:4px 0 0">Sua página pública de divulgação. Pacientes podem encontrar você e solicitar consultas por aqui.</p>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="editarPaginaMedico()" style="background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:8px 16px;font-size:12.5px;font-weight:800;color:var(--navy);cursor:pointer;font-family:'DM Sans',sans-serif">✏️ Editar página</button>
+        <button onclick="verPreviewPagina()" style="background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:none;border-radius:10px;padding:8px 16px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">👁 Ver como paciente</button>
+      </div>
+    </div>
+
+    <!-- Formulário de edição (colapsável) -->
+    <div id="pagina-edit-form" style="display:none;margin-bottom:16px">
+      <div class="panel">
+        <div class="panel-head"><div><h2>✏️ Editar conteúdo da página</h2></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field" style="grid-column:1/-1">
+            <label>Slogan / frase de apresentação</label>
+            <input id="pag-slogan" type="text" placeholder="Ex.: Cuidando da saúde da criança com amor e dedicação">
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Sobre mim / História profissional</label>
+            <textarea id="pag-bio" style="min-height:100px" placeholder="Conte sua trajetória, motivação e abordagem de atendimento..."></textarea>
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Formação acadêmica</label>
+            <textarea id="pag-formacao" style="min-height:80px" placeholder="Ex.: Graduação em Medicina — USP (2010)&#10;Residência em Pediatria — Hospital das Clínicas (2012)&#10;Especialização em Neonatologia — UNIFESP (2014)"></textarea>
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Conquistas e destaques</label>
+            <textarea id="pag-conquistas" style="min-height:80px" placeholder="Ex.: Membro da Sociedade Brasileira de Pediatria&#10;Autor de artigos sobre saúde infantil&#10;Palestrante em congressos nacionais"></textarea>
+          </div>
+          <div class="field">
+            <label>Valor da consulta</label>
+            <input id="pag-valor" type="text" placeholder="Ex.: R$ 250,00 ou A consultar">
+          </div>
+          <div class="field">
+            <label>Convênios aceitos</label>
+            <input id="pag-convenios" type="text" placeholder="Ex.: Unimed, Bradesco, Particular">
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Endereço do consultório (para o mapa)</label>
+            <input id="pag-endereco-mapa" type="text" placeholder="Ex.: Av. Paulista, 1000 — São Paulo, SP">
+          </div>
+          <div class="field">
+            <label>Telefone para contato / WhatsApp</label>
+            <input id="pag-tel-pub" type="text" placeholder="(11) 99999-9999">
+          </div>
+          <div class="field">
+            <label>E-mail público</label>
+            <input id="pag-email-pub" type="email" placeholder="contato@seuconsultorio.com">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button onclick="salvarPaginaMedico()" class="primary" style="flex:1">💾 Salvar página</button>
+          <button onclick="document.getElementById('pagina-edit-form').style.display='none'" style="background:white;color:var(--navy);border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview da página pública -->
+    <div id="pagina-preview-wrap">
+      <!-- conteúdo renderizado por renderPaginaMedico() -->
+    </div>
+
+  </div>
+
   <!-- ─── SUB ADMIN (somente CRM 239138) ─── -->
   <div id="msub-panel-admin" style="display:none">
 
@@ -1526,6 +1682,12 @@ button.export{background:var(--teal);color:white}
         <div style="font-size:12px;opacity:.75;margin-top:2px">CapiClinic · Acesso restrito ao administrador</div>
       </div>
       <div style="margin-left:auto;font-size:11px;opacity:.6">CRM 239138</div>
+    </div>
+
+    <!-- MÉDICOS PENDENTES DE APROVAÇÃO -->
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-head"><div><h2>🔔 Solicitações de Cadastro — Médicos</h2></div><button class="secondary" style="padding:7px 12px;font-size:12px" onclick="renderMedicosPendentes()">↻ Atualizar</button></div>
+      <div id="admin-meds-pendentes"><div style="color:var(--muted);font-size:13px;padding:8px 0">Carregando…</div></div>
     </div>
 
     <!-- LISTA DE PACIENTES -->
@@ -2605,6 +2767,10 @@ async function doLoginMed() {
   // 1. Verifica senha no Firebase (permite senha alterada)
   try {
     const dadosMed = await DB.get('medicos/' + u);
+    if (dadosMed && dadosMed.status === 'pendente') {
+      err.textContent = 'Seu cadastro ainda está aguardando aprovação do administrador.';
+      err.style.display = 'block'; return;
+    }
     if (dadosMed && dadosMed.senhaMed) {
       if (dadosMed.senhaMed === p) {
         MED_USERS[u] = p; // sincroniza em memória
@@ -2632,6 +2798,7 @@ function _activateMedSession(u) {
   loggedMed = true; medCRM = u;
   saveSession(u);
   document.getElementById('med-logged-name').textContent = MED_NAMES[u];
+  setTimeout(renderAtividadesMed, 600);
   document.getElementById('f-crm').value = u;
   if (!document.getElementById('f-dtcons').value)
     document.getElementById('f-dtcons').value = new Date().toISOString().slice(0, 10);
@@ -2716,24 +2883,25 @@ function logout(role) {
 }
 
 // ═══════════════════════════ SUB-ABAS ═══════════════════════════
-const MED_SUBS = ['atend','tele','pacs',0,1,2,3,'admin'];
+const MED_SUBS = ['atend','tele','pacs',0,1,2,3,'pagina','admin'];
 const ADMIN_CRMS = ['239138','239598']; // Admins: Gabriel e Juliano
 const ADMIN_CRM = '239138'; // mantido para compatibilidade
 
 function showMedSub(n) {
   MED_SUBS.forEach(i => {
     const panel = document.getElementById('msub-panel-'+i);
-    const btnId = i==='atend'?'msub-atend':i==='tele'?'msub-tele':i==='pacs'?'msub-pacs':i==='admin'?'msub-admin':'msub'+i;
+    const btnId = i==='atend'?'msub-atend':i==='tele'?'msub-tele':i==='pacs'?'msub-pacs':i==='admin'?'msub-admin':i==='docs'?'msub-docs':i==='pagina'?'msub-pagina':'msub'+i;
     const btn   = document.getElementById(btnId);
     if (panel) panel.style.display = (i===n) ? 'block' : 'none';
     if (btn)   btn.classList.toggle('active', i===n);
   });
   currentMedSub = n;
-  if (n===1)       renderHistorico();
-  if (n===2)       renderMedCal();
-  if (n===3)       renderArquivosMed();
-  if (n==='pacs')  { renderMeusPacientes(''); renderSolicitacoesMedico(); }
-  if (n==='admin') { renderAdminPacientes(''); renderAdminMedicos(); }
+  if (n===1)        renderHistorico();
+  if (n===2)        renderMedCal();
+  if (n===3)        renderArquivosMed();
+  if (n==='pacs')   { renderMeusPacientes(''); renderSolicitacoesMedico(); }
+  if (n==='pagina') renderPaginaMedico();
+  if (n==='admin')  { renderAdminPacientes(''); renderAdminMedicos(); renderMedicosPendentes(); }
 }
 
 // ── Mostrar aba Admin apenas para o administrador ──
@@ -2748,6 +2916,43 @@ function gerarMedID(crm) {
 }
 
 // ── Painel Admin: lista de pacientes ──
+
+// ═══════════════════════════ APROVAÇÃO DE MÉDICOS ═══════════════════════════
+async function renderMedicosPendentes() {
+  const el = document.getElementById('admin-meds-pendentes');
+  if (!el) return;
+  const meds = await DB.get('medicos') || {};
+  const pendentes = Object.entries(meds).filter(([,v]) => v && v.status === 'pendente');
+  if (!pendentes.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">Nenhuma solicitação pendente.</div>'; return; }
+  el.innerHTML = pendentes.map(([crm, med]) => `
+    <div style="background:#FFF5DF;border:1px solid #E8CC80;border-radius:12px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px">
+        <div style="font-weight:800;color:var(--navy)">${med.nome}</div>
+        <div style="font-size:12px;color:var(--muted)">CRM-${med.uf||'SP'} ${crm} · ${med.especialidade||''} · ${med.email||''}</div>
+        <div style="font-size:11px;color:var(--muted)">${fmtDate(med.criadoEm)}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="aprovarMedico('${crm}')" style="background:linear-gradient(135deg,var(--green),#0f6b3a);color:white;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">✅ Aprovar</button>
+        <button onclick="rejeitarMedico('${crm}')" style="background:#FDEEEE;color:var(--red);border:1px solid #FCA5A5;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">✕ Rejeitar</button>
+      </div>
+    </div>`).join('');
+}
+async function aprovarMedico(crm) {
+  const med = await DB.get('medicos/' + crm);
+  if (!med) return;
+  await DB.set('medicos/' + crm + '/status', 'ativo');
+  MED_NAMES[crm] = med.nome + ' (CRM-' + (med.uf||'SP') + ' ' + crm + ')';
+  MED_USERS[crm] = med.senhaMed;
+  toast('✅ Dr(a). ' + med.nome + ' aprovado com sucesso!', 'ok');
+  renderMedicosPendentes(); renderAdminMedicos();
+}
+async function rejeitarMedico(crm) {
+  if (!confirm('Rejeitar o cadastro do CRM ' + crm + '? Esta ação não pode ser desfeita.')) return;
+  await DB.set('medicos/' + crm + '/status', 'rejeitado');
+  toast('Cadastro rejeitado.', 'info');
+  renderMedicosPendentes();
+}
+
 async function renderAdminPacientes(filtro) {
   const el = document.getElementById('admin-pac-lista');
   const tot = document.getElementById('admin-pac-total');
@@ -3041,7 +3246,7 @@ async function renderPacMedicos() {
     } else if (pendente) {
       botao = `<span style="background:#FFF5DF;color:#E8A800;font-size:11px;font-weight:800;padding:5px 12px;border-radius:20px">⏳ Solicitado</span>`;
     } else {
-      botao = `<button onclick="solicitarVinculoMedico('${crm}')"
+      botao = `<button onclick="abrirPaginaMedicoPublica('${crm}')"
         style="background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:none;border-radius:10px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
         + Solicitar vínculo
       </button>`;
@@ -5838,6 +6043,31 @@ function gerarPDF(tipo) {
   </div>
 </div>
 
+
+<!-- ══ MODAL: ATIVIDADES DETALHADAS ══ -->
+<div id="modal-atividades-med" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9400;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:20px;box-shadow:0 16px 60px rgba(0,0,0,.3);padding:32px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;position:relative">
+    <button onclick="fecharModalAtividades()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+    <div style="font-size:22px;font-weight:900;color:var(--navy);margin-bottom:4px">📈 Atividades</div>
+    <div id="modal-atv-body" style="margin-top:16px"></div>
+  </div>
+</div>
+
+
+<!-- ══ MODAL: PREVIEW PÁGINA DO MÉDICO (visão do paciente) ══ -->
+<div id="modal-preview-pagina" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9500;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto">
+  <div style="background:var(--soft);border-radius:20px;box-shadow:0 16px 60px rgba(0,0,0,.3);padding:24px;max-width:640px;width:100%;position:relative;margin:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div style="font-size:16px;font-weight:900;color:var(--navy)">👁 Visão do paciente</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Assim é como os responsáveis veem sua página</div>
+      </div>
+      <button onclick="document.getElementById('modal-preview-pagina').style.display='none'" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted)">✕</button>
+    </div>
+    <div id="modal-preview-body"></div>
+  </div>
+</div>
+
 </body></html>`);
   win.document.close();
 }
@@ -6083,6 +6313,553 @@ document.getElementById('pac-mes-sel')&&(document.getElementById('pac-mes-sel').
     _activateMedSession(crm);
   }
 })();
+
+// ═══════════════════════════ CADASTRO MÉDICO (NOVO) ═══════════════════════════
+function showMedLoginTab(tab) {
+  const isLogin = tab === 'login';
+  const pl = document.getElementById('med-panel-login');
+  const pc = document.getElementById('med-panel-criar');
+  const tl = document.getElementById('med-tab-login');
+  const tc = document.getElementById('med-tab-criar');
+  if (pl) pl.style.display = isLogin ? '' : 'none';
+  if (pc) pc.style.display = isLogin ? 'none' : '';
+  if (tl) { tl.style.borderBottomColor = isLogin ? 'var(--blue)' : 'transparent'; tl.style.color = isLogin ? 'var(--blue)' : 'var(--muted)'; }
+  if (tc) { tc.style.borderBottomColor = isLogin ? 'transparent' : 'var(--blue)'; tc.style.color = isLogin ? 'var(--muted)' : 'var(--blue)'; }
+  if (!isLogin) setTimeout(() => document.getElementById('nm-nome')?.focus(), 100);
+}
+
+async function cadastrarMedico() {
+  const errEl = document.getElementById('med-criar-err');
+  const okEl  = document.getElementById('med-criar-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  const nome   = (document.getElementById('nm-nome')?.value||'').trim();
+  const crm    = (document.getElementById('nm-crm')?.value||'').trim();
+  const uf     = document.getElementById('nm-uf')?.value || 'SP';
+  const esp    = document.getElementById('nm-esp')?.value || '';
+  const email  = (document.getElementById('nm-email')?.value||'').trim().toLowerCase();
+  const senha  = document.getElementById('nm-senha')?.value || '';
+  const senha2 = document.getElementById('nm-senha2')?.value || '';
+
+  if (!nome)  { errEl.textContent = 'Informe seu nome completo.'; errEl.style.display = 'block'; return; }
+  if (!crm)   { errEl.textContent = 'Informe seu CRM.'; errEl.style.display = 'block'; return; }
+  if (!esp)   { errEl.textContent = 'Selecione sua especialidade.'; errEl.style.display = 'block'; return; }
+  if (!email.includes('@')) { errEl.textContent = 'Informe um e-mail válido.'; errEl.style.display = 'block'; return; }
+  if (senha.length < 6) { errEl.textContent = 'A senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return; }
+  if (senha !== senha2) { errEl.textContent = 'As senhas não coincidem.'; errEl.style.display = 'block'; return; }
+
+  try {
+    // Verificar se CRM já existe
+    const existing = await DB.get('medicos/' + crm);
+    if (existing) { errEl.textContent = 'CRM ' + crm + ' já está cadastrado.'; errEl.style.display = 'block'; return; }
+
+    // Verificar e-mail duplicado
+    const allMeds = await DB.get('medicos') || {};
+    for (const dados of Object.values(allMeds)) {
+      if ((dados.email||'').toLowerCase() === email) {
+        errEl.textContent = 'Este e-mail já está cadastrado.'; errEl.style.display = 'block'; return;
+      }
+    }
+
+    // Salvar como pendente de aprovação
+    await DB.set('medicos/' + crm, {
+      nome, crm, uf, especialidade: esp, email,
+      senhaMed: senha, senhaProvisoria: false,
+      status: 'pendente', // admin precisa aprovar
+      criadoEm: new Date().toISOString(),
+    });
+
+    // Notificar administradores
+    await DB.set('admin_notificacoes/med_pendente_' + crm, {
+      tipo: 'novo_medico', crm, nome, email, esp,
+      data: new Date().toISOString(), lido: false
+    });
+
+    okEl.innerHTML = `
+      <div style="font-size:28px;margin-bottom:8px">✅</div>
+      <div style="font-size:15px;font-weight:900;color:var(--navy);margin-bottom:6px">Solicitação enviada!</div>
+      <div style="font-size:13px;color:var(--muted)">Seu cadastro foi recebido e será analisado pelo administrador.<br>
+      Você receberá a confirmação em <b>${email}</b> em até 24h.</div>
+      <div style="margin-top:12px">
+        <button onclick="showMedLoginTab('login')" style="background:var(--blue);color:white;border:none;border-radius:10px;padding:8px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+          Ir para o login
+        </button>
+      </div>`;
+    okEl.style.display = 'block';
+    // Limpar campos
+    ['nm-nome','nm-crm','nm-email','nm-senha','nm-senha2'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+
+  } catch(e) {
+    errEl.textContent = 'Erro ao enviar: ' + e.message;
+    errEl.style.display = 'block'; console.error(e);
+  }
+}
+
+// ═══════════════════════════ ATIVIDADES DO MÉDICO ═══════════════════════════
+async function renderAtividadesMed() {
+  if (!medCRM) return;
+  const now   = new Date();
+  const mes   = now.getMonth();
+  const ano   = now.getFullYear();
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  const periodoEl = document.getElementById('med-atv-periodo');
+  if (periodoEl) periodoEl.textContent = meses[mes] + ' de ' + ano;
+
+  // Buscar consultas do Firebase
+  const allSnap = await DB.get('consultas_med/' + medCRM) || {};
+  const retSnap = await DB.get('retornos_med/' + medCRM) || {};
+  const consultaArr = Object.values(allSnap);
+  const retornoArr  = Object.values(retSnap);
+
+  // Filtrar pelo mês atual
+  const doMes = arr => arr.filter(c => {
+    const d = new Date(c.timestamp || c.dt_consulta || c.data || 0);
+    return d.getMonth() === mes && d.getFullYear() === ano;
+  });
+
+  // Também incluir do localStorage
+  const local = JSON.parse(localStorage.getItem('capikids_consultas')||'[]')
+    .filter(c => (!c.medCRM || c.medCRM === medCRM));
+  const localRet = JSON.parse(localStorage.getItem('capikids_retornos')||'[]')
+    .filter(c => (!c.medCRM || c.medCRM === medCRM));
+
+  const todasConsultas = [...consultaArr, ...local];
+  const todosRetornos  = [...retornoArr,  ...localRet];
+  const consultasMes   = doMes(todasConsultas);
+  const retornosMes    = doMes(todosRetornos);
+
+  const pacientesUnicos = new Set(consultasMes.map(c => c.nome||c.pacId||'').filter(Boolean));
+
+  // Novos pacientes = consultasMes onde não há consulta anterior
+  const nomesPrev = new Set(
+    todasConsultas.filter(c => {
+      const d = new Date(c.timestamp||c.dt_consulta||0);
+      return d < new Date(ano, mes, 1);
+    }).map(c => c.nome||'')
+  );
+  const novos = [...pacientesUnicos].filter(n => !nomesPrev.has(n)).length;
+
+  // Atualizar KPIs
+  const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  setEl('atv-consultas', consultasMes.length);
+  setEl('atv-retornos',  retornosMes.length);
+  setEl('atv-pacientes', pacientesUnicos.size);
+  setEl('atv-novos',     novos);
+
+  // Mini gráfico últimos 7 dias
+  const barsEl   = document.getElementById('med-atv-minibars');
+  const labelsEl = document.getElementById('med-atv-minilabels');
+  if (barsEl && labelsEl) {
+    const dias = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const count = todasConsultas.filter(c => (c.timestamp||c.dt_consulta||'').slice(0,10) === key).length;
+      dias.push({ label: d.toLocaleDateString('pt-BR',{weekday:'short'}).slice(0,3), count });
+    }
+    const maxCount = Math.max(...dias.map(d => d.count), 1);
+    barsEl.innerHTML = dias.map(d => {
+      const h = Math.max(4, Math.round((d.count / maxCount) * 44));
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+        <div style="font-size:10px;color:var(--blue);font-weight:800">${d.count||''}</div>
+        <div style="width:100%;height:${h}px;background:${d.count?'var(--blue)':'var(--line)'};border-radius:4px 4px 0 0;transition:.3s"></div>
+      </div>`;
+    }).join('');
+    labelsEl.innerHTML = dias.map(d =>
+      `<div style="flex:1;text-align:center;font-size:10px;color:var(--muted)">${d.label}</div>`
+    ).join('');
+  }
+}
+
+// Modal detalhado de atividades
+function abrirModalAtividades() {
+  const m = document.getElementById('modal-atividades-med');
+  if (m) { m.style.display = 'flex'; renderAtividadesDetalhadas(); }
+}
+function fecharModalAtividades() {
+  const m = document.getElementById('modal-atividades-med');
+  if (m) m.style.display = 'none';
+}
+
+async function renderAtividadesDetalhadas() {
+  const el = document.getElementById('modal-atv-body');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">⏳ Carregando…</div>';
+
+  const now = new Date();
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const local = JSON.parse(localStorage.getItem('capikids_consultas')||'[]').filter(c => (!c.medCRM || c.medCRM === medCRM));
+  const localRet = JSON.parse(localStorage.getItem('capikids_retornos')||'[]').filter(c => (!c.medCRM || c.medCRM === medCRM));
+
+  // Últimos 6 meses
+  const dados6m = [];
+  for (let i = 5; i >= 0; i--) {
+    const d  = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const m_ = d.getMonth(), a_ = d.getFullYear();
+    const cons = local.filter(c => { const dd = new Date(c.timestamp||c.dt_consulta||0); return dd.getMonth()===m_ && dd.getFullYear()===a_; }).length;
+    const rets = localRet.filter(c => { const dd = new Date(c.timestamp||0); return dd.getMonth()===m_ && dd.getFullYear()===a_; }).length;
+    dados6m.push({ label: meses[m_] + '/' + String(a_).slice(2), cons, rets });
+  }
+
+  const maxVal = Math.max(...dados6m.map(d => d.cons + d.rets), 1);
+
+  el.innerHTML = `
+    <h3 style="margin:0 0 16px;color:var(--navy)">Consultas e Retornos — últimos 6 meses</h3>
+    <div style="display:flex;align-items:flex-end;gap:8px;height:120px;margin-bottom:6px">
+      ${dados6m.map(d => {
+        const hC = Math.round((d.cons / maxVal) * 110);
+        const hR = Math.round((d.rets / maxVal) * 110);
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div style="width:100%;display:flex;gap:2px;align-items:flex-end;justify-content:center">
+            <div style="flex:1;height:${hC}px;background:var(--blue);border-radius:4px 4px 0 0" title="Consultas: ${d.cons}"></div>
+            <div style="flex:1;height:${hR}px;background:var(--teal);border-radius:4px 4px 0 0" title="Retornos: ${d.rets}"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      ${dados6m.map(d => `<div style="flex:1;text-align:center;font-size:10px;color:var(--muted)">${d.label}</div>`).join('')}
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;background:var(--blue);border-radius:2px;display:inline-block"></span>Consultas</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;background:var(--teal);border-radius:2px;display:inline-block"></span>Retornos</span>
+    </div>
+    <h3 style="margin:0 0 12px;color:var(--navy)">Resumo acumulado</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div style="background:var(--soft);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:28px;font-weight:900;color:var(--navy)">${local.length}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Total de consultas</div>
+      </div>
+      <div style="background:#F0FFF7;border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:28px;font-weight:900;color:var(--teal)">${localRet.length}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Total de retornos</div>
+      </div>
+      <div style="background:#EAF2FF;border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:28px;font-weight:900;color:var(--blue)">${new Set(local.map(c=>c.nome||'')).size}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Pacientes distintos</div>
+      </div>
+    </div>`;
+}
+
+
+// ═══════════════════════════ PÁGINA DO MÉDICO ═══════════════════════════
+
+function editarPaginaMedico() {
+  const form = document.getElementById('pagina-edit-form');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  if (form.style.display === 'block') carregarCamposPagina();
+}
+
+async function carregarCamposPagina() {
+  const dados = await DB.get('medicos/' + medCRM + '/pagina') || {};
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+  setVal('pag-slogan',         dados.slogan      || '');
+  setVal('pag-bio',            dados.bio         || '');
+  setVal('pag-formacao',       dados.formacao    || '');
+  setVal('pag-conquistas',     dados.conquistas  || '');
+  setVal('pag-valor',          dados.valor       || '');
+  setVal('pag-convenios',      dados.convenios   || '');
+  setVal('pag-endereco-mapa',  dados.enderecoMapa|| '');
+  setVal('pag-tel-pub',        dados.telPub      || '');
+  setVal('pag-email-pub',      dados.emailPub    || '');
+}
+
+async function salvarPaginaMedico() {
+  const get = id => (document.getElementById(id)?.value||'').trim();
+  const dados = {
+    slogan:       get('pag-slogan'),
+    bio:          get('pag-bio'),
+    formacao:     get('pag-formacao'),
+    conquistas:   get('pag-conquistas'),
+    valor:        get('pag-valor'),
+    convenios:    get('pag-convenios'),
+    enderecoMapa: get('pag-endereco-mapa'),
+    telPub:       get('pag-tel-pub'),
+    emailPub:     get('pag-email-pub'),
+    atualizadoEm: new Date().toISOString(),
+  };
+  await DB.set('medicos/' + medCRM + '/pagina', dados);
+  toast('✅ Página salva com sucesso!', 'ok');
+  document.getElementById('pagina-edit-form').style.display = 'none';
+  renderPaginaMedico();
+}
+
+async function renderPaginaMedico() {
+  const wrap = document.getElementById('pagina-preview-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">⏳ Carregando…</div>';
+
+  const medDados = await DB.get('medicos/' + medCRM) || {};
+  const pagina   = medDados.pagina || {};
+  const perfil   = MED_PROFILES[medCRM] || {};
+  const nome     = medDados.nome  || perfil.nome || 'Dr. ' + medCRM;
+  const esp      = medDados.especialidade || perfil.esp || 'Pediatria';
+  const crm      = 'CRM-' + (medDados.uf||'SP') + ' ' + medCRM;
+  const foto     = medDados.photo || '';
+  const tel      = pagina.telPub  || medDados.tel   || '';
+  const email    = pagina.emailPub|| medDados.email  || '';
+  const addr     = pagina.enderecoMapa || medDados.addr || '';
+
+  // Agenda: pegar próximos dias disponíveis
+  const agenda   = medDados.agenda || {};
+  const diasSem  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const slotsDisp = Object.entries(agenda)
+    .filter(([,v]) => v && v.ativo && v.horas && v.horas.length)
+    .map(([dia, v]) => ({ dia: diasSem[parseInt(dia)]||dia, horas: v.horas }));
+
+  // Mapa via Google Maps embed (sem API key, usa search URL)
+  const mapUrl = addr
+    ? `https://maps.google.com/maps?q=${encodeURIComponent(addr)}&output=embed&z=16`
+    : '';
+
+  wrap.innerHTML = `
+  <!-- CARD HERO da página pública -->
+  <div style="background:linear-gradient(135deg,#0B1F3A 0%,#143B68 60%,#1455C0 100%);border-radius:20px;padding:32px;color:white;margin-bottom:16px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:rgba(255,255,255,.04);border-radius:50%"></div>
+    <div style="position:absolute;bottom:-60px;right:20px;width:160px;height:160px;background:rgba(255,255,255,.03);border-radius:50%"></div>
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;position:relative">
+      <div style="width:100px;height:100px;border-radius:50%;border:3px solid rgba(255,255,255,.3);overflow:hidden;background:rgba(255,255,255,.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:40px">
+        ${foto ? `<img src="${foto}" style="width:100%;height:100%;object-fit:cover">` : '🩺'}
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:24px;font-weight:900;letter-spacing:-.02em">${nome}</div>
+        <div style="font-size:14px;opacity:.8;margin-top:4px">${esp} · ${crm}</div>
+        ${pagina.slogan ? `<div style="margin-top:12px;font-size:14px;opacity:.9;font-style:italic;border-left:3px solid rgba(255,255,255,.4);padding-left:12px">"${pagina.slogan}"</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;min-width:180px">
+        ${tel ? `<div style="display:flex;align-items:center;gap:8px;font-size:13px;opacity:.9"><span>📞</span>${tel}</div>` : ''}
+        ${email ? `<div style="display:flex;align-items:center;gap:8px;font-size:13px;opacity:.9"><span>✉️</span>${email}</div>` : ''}
+        ${addr  ? `<div style="display:flex;align-items:center;gap:8px;font-size:13px;opacity:.9"><span>📍</span>${addr}</div>` : ''}
+        ${pagina.valor ? `<div style="background:rgba(255,255,255,.15);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:800;margin-top:4px">💰 ${pagina.valor}</div>` : ''}
+        ${pagina.convenios ? `<div style="font-size:12px;opacity:.75">🏥 ${pagina.convenios}</div>` : ''}
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+    <!-- Coluna esquerda -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      ${pagina.bio ? `
+      <div class="panel">
+        <div class="panel-head"><h2>👨‍⚕️ Sobre mim</h2></div>
+        <p style="font-size:13.5px;color:var(--ink);line-height:1.7;margin:0;white-space:pre-line">${pagina.bio}</p>
+      </div>` : `
+      <div class="panel" style="border:2px dashed var(--line);background:var(--soft)">
+        <div style="text-align:center;color:var(--muted);padding:16px">
+          <div style="font-size:28px;margin-bottom:8px">📝</div>
+          <div style="font-size:13px">Clique em <b>Editar página</b> para adicionar sua história e trajetória profissional.</div>
+        </div>
+      </div>`}
+
+      ${pagina.formacao ? `
+      <div class="panel">
+        <div class="panel-head"><h2>🎓 Formação</h2></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${pagina.formacao.split('\n').filter(Boolean).map(l =>
+            `<div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:5px"></div>
+              <div style="font-size:13px;color:var(--ink)">${l.trim()}</div>
+            </div>`
+          ).join('')}
+        </div>
+      </div>` : ''}
+
+      ${pagina.conquistas ? `
+      <div class="panel">
+        <div class="panel-head"><h2>🏆 Conquistas</h2></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${pagina.conquistas.split('\n').filter(Boolean).map(l =>
+            `<div style="display:flex;gap:10px;align-items:flex-start">
+              <span style="font-size:16px;flex-shrink:0">⭐</span>
+              <div style="font-size:13px;color:var(--ink)">${l.trim()}</div>
+            </div>`
+          ).join('')}
+        </div>
+      </div>` : ''}
+
+    </div>
+
+    <!-- Coluna direita -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <!-- Disponibilidade -->
+      <div class="panel">
+        <div class="panel-head"><h2>📅 Disponibilidade</h2></div>
+        ${slotsDisp.length ? `
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${slotsDisp.map(s => `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--soft);border-radius:10px">
+            <div style="font-size:13px;font-weight:800;color:var(--navy);min-width:36px">${s.dia}</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              ${s.horas.slice(0,6).map(h => `<span style="background:white;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:12px;color:var(--blue);font-weight:700">${h}</span>`).join('')}
+            </div>
+          </div>`).join('')}
+        </div>` : `
+        <div style="color:var(--muted);font-size:13px;text-align:center;padding:12px">
+          Configure sua agenda na aba <b>📅 Agenda</b> para exibir os horários disponíveis.
+        </div>`}
+      </div>
+
+      <!-- Mapa -->
+      ${addr ? `
+      <div class="panel" style="padding:0;overflow:hidden">
+        <div style="padding:16px 20px 12px"><div style="font-size:15px;font-weight:900;color:var(--navy)">📍 Localização</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${addr}</div></div>
+        <iframe src="${mapUrl}" width="100%" height="220" style="border:0;display:block" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <div style="padding:10px 16px">
+          <a href="https://maps.google.com/?q=${encodeURIComponent(addr)}" target="_blank"
+             style="font-size:12px;color:var(--blue);font-weight:700;text-decoration:none">
+            🗺 Abrir no Google Maps →
+          </a>
+        </div>
+      </div>` : `
+      <div class="panel" style="border:2px dashed var(--line);background:var(--soft)">
+        <div style="text-align:center;color:var(--muted);padding:16px">
+          <div style="font-size:28px;margin-bottom:8px">🗺</div>
+          <div style="font-size:13px">Adicione o <b>endereço do consultório</b> para exibir o mapa aqui.</div>
+        </div>
+      </div>`}
+
+      <!-- Solicitar consulta (visível para o médico como preview) -->
+      <div class="panel" style="border:2px solid var(--blue);background:#EAF2FF">
+        <div class="panel-head"><h2>📋 Solicitar consulta</h2><span class="chip chip-blue">Visível para pacientes</span></div>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Os responsáveis veem este botão e podem solicitar uma consulta ao clicar.</p>
+        <button disabled style="width:100%;background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:800;cursor:not-allowed;font-family:'DM Sans',sans-serif;opacity:.7">
+          Solicitar consulta com ${nome.split(' ').slice(0,2).join(' ')}
+        </button>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">⚠️ Preview — este botão funciona apenas na área do paciente</div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
+function verPreviewPagina() {
+  // Abre um modal com a visão do paciente
+  const modal = document.getElementById('modal-preview-pagina');
+  if (modal) { modal.style.display = 'flex'; renderPreviewPaginaPaciente(medCRM); }
+}
+
+async function renderPreviewPaginaPaciente(crm) {
+  const el = document.getElementById('modal-preview-body');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted)">⏳ Carregando…</div>';
+
+  const medDados = await DB.get('medicos/' + crm) || {};
+  const pagina   = medDados.pagina || {};
+  const perfil   = MED_PROFILES[crm] || {};
+  const nome     = medDados.nome || perfil.nome || 'Dr. ' + crm;
+  const esp      = medDados.especialidade || perfil.esp || 'Pediatria';
+  const crmStr   = 'CRM-' + (medDados.uf||'SP') + ' ' + crm;
+  const foto     = medDados.photo || '';
+  const addr     = pagina.enderecoMapa || medDados.addr || '';
+  const mapUrl   = addr ? `https://maps.google.com/maps?q=${encodeURIComponent(addr)}&output=embed&z=16` : '';
+  const agenda   = medDados.agenda || {};
+  const diasSem  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const slotsDisp = Object.entries(agenda)
+    .filter(([,v]) => v && v.ativo && v.horas && v.horas.length)
+    .map(([dia, v]) => ({ dia: diasSem[parseInt(dia)]||dia, horas: v.horas }));
+
+  el.innerHTML = `
+  <div style="background:linear-gradient(135deg,#0B1F3A,#1455C0);border-radius:16px;padding:28px;color:white;margin-bottom:16px">
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+      <div style="width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,.3);overflow:hidden;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:36px;flex-shrink:0">
+        ${foto ? `<img src="${foto}" style="width:100%;height:100%;object-fit:cover">` : '🩺'}
+      </div>
+      <div style="flex:1">
+        <div style="font-size:20px;font-weight:900">${nome}</div>
+        <div style="font-size:13px;opacity:.8;margin-top:3px">${esp} · ${crmStr}</div>
+        ${pagina.slogan ? `<div style="margin-top:10px;font-size:13px;opacity:.85;font-style:italic">"${pagina.slogan}"</div>` : ''}
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px">
+      ${pagina.valor ? `<span style="background:rgba(255,255,255,.15);border-radius:8px;padding:5px 12px;font-size:13px;font-weight:800">💰 ${pagina.valor}</span>` : ''}
+      ${pagina.convenios ? `<span style="background:rgba(255,255,255,.1);border-radius:8px;padding:5px 12px;font-size:12px">🏥 ${pagina.convenios}</span>` : ''}
+    </div>
+  </div>
+
+  ${pagina.bio ? `<div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px"><div style="font-size:14px;font-weight:900;color:var(--navy);margin-bottom:8px">👨‍⚕️ Sobre o médico</div><p style="font-size:13px;color:var(--ink);line-height:1.7;margin:0;white-space:pre-line">${pagina.bio}</p></div>` : ''}
+
+  ${slotsDisp.length ? `
+  <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px">
+    <div style="font-size:14px;font-weight:900;color:var(--navy);margin-bottom:10px">📅 Horários disponíveis</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${slotsDisp.map(s => `
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--soft);border-radius:8px">
+        <div style="font-size:13px;font-weight:800;color:var(--navy);min-width:36px">${s.dia}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${s.horas.slice(0,8).map(h => `<span style="background:white;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:12px;color:var(--blue);font-weight:700;cursor:pointer" onclick="selecionarHorario('${crm}','${s.dia}','${h}')">${h}</span>`).join('')}
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>` : ''}
+
+  ${pagina.formacao ? `
+  <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px">
+    <div style="font-size:14px;font-weight:900;color:var(--navy);margin-bottom:8px">🎓 Formação</div>
+    ${pagina.formacao.split('\n').filter(Boolean).map(l => `<div style="display:flex;gap:8px;margin-bottom:5px"><span style="color:var(--blue)">▸</span><span style="font-size:13px;color:var(--ink)">${l.trim()}</span></div>`).join('')}
+  </div>` : ''}
+
+  ${pagina.conquistas ? `
+  <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px">
+    <div style="font-size:14px;font-weight:900;color:var(--navy);margin-bottom:8px">🏆 Conquistas</div>
+    ${pagina.conquistas.split('\n').filter(Boolean).map(l => `<div style="display:flex;gap:8px;margin-bottom:5px"><span>⭐</span><span style="font-size:13px;color:var(--ink)">${l.trim()}</span></div>`).join('')}
+  </div>` : ''}
+
+  ${addr ? `
+  <div style="background:white;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:12px">
+    <div style="padding:14px 18px 10px"><div style="font-size:14px;font-weight:900;color:var(--navy)">📍 Localização</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${addr}</div></div>
+    <iframe src="${mapUrl}" width="100%" height="200" style="border:0;display:block" allowfullscreen loading="lazy"></iframe>
+    <div style="padding:8px 16px"><a href="https://maps.google.com/?q=${encodeURIComponent(addr)}" target="_blank" style="font-size:12px;color:var(--blue);font-weight:700;text-decoration:none">🗺 Abrir no Google Maps →</a></div>
+  </div>` : ''}
+
+  <!-- Botão de solicitação -->
+  <div style="background:white;border:2px solid var(--blue);border-radius:14px;padding:18px;text-align:center">
+    <div style="font-size:14px;font-weight:900;color:var(--navy);margin-bottom:6px">Agendar consulta</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Selecione um horário acima ou clique para solicitar</div>
+    <button onclick="solicitarConsultaMedico('${crm}','${nome}')" style="width:100%;background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
+      📋 Solicitar consulta com ${nome.split(' ').slice(0,2).join(' ')}
+    </button>
+    ${pagina.telPub||medDados.tel ? `<div style="margin-top:10px"><a href="https://wa.me/55${((pagina.telPub||medDados.tel||'').replace(/\D/g,''))}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:white;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:800;text-decoration:none">📱 WhatsApp</a></div>` : ''}
+  </div>`;
+}
+
+
+function abrirPaginaMedicoPublica(crm) {
+  const modal = document.getElementById('modal-preview-pagina');
+  if (modal) { modal.style.display = 'flex'; renderPreviewPaginaPaciente(crm); }
+}
+
+function selecionarHorario(crm, dia, hora) {
+  solicitarConsultaMedico(crm, null, dia, hora);
+}
+
+async function solicitarConsultaMedico(crm, nomeDoc, dia, hora) {
+  if (!loggedPac) {
+    toast('Faça login na Área do Paciente para solicitar consulta.', 'err');
+    document.getElementById('modal-preview-pagina').style.display = 'none';
+    return;
+  }
+  const horarioStr = (dia && hora) ? dia + ' às ' + hora : 'A definir';
+  if (!confirm('Solicitar consulta' + (horarioStr !== 'A definir' ? ' para ' + horarioStr : '') + '?')) return;
+  try {
+    const solId = Date.now() + '_' + pacId;
+    await DB.set('medicos/' + crm + '/solicitacoesConsulta/' + solId, {
+      pacId, nome: pacName, horario: horarioStr,
+      data: new Date().toISOString(), status: 'pendente'
+    });
+    await DB.set('pacientes/' + pacId + '/solicitacoesConsulta/' + solId, {
+      medCRM: crm, horario: horarioStr, data: new Date().toISOString(), status: 'pendente'
+    });
+    toast('✅ Solicitação de consulta enviada! O médico entrará em contato.', 'ok');
+    document.getElementById('modal-preview-pagina').style.display = 'none';
+  } catch(e) {
+    toast('Erro ao enviar solicitação.', 'err'); console.error(e);
+  }
+}
+
 </script>
 
 <!-- ══════════ MODAL: ESQUECI MINHA SENHA ══════════ -->
@@ -6264,6 +7041,31 @@ document.getElementById('pac-mes-sel')&&(document.getElementById('pac-mes-sel').
     <div class="login-field"><label>Confirmar nova senha</label><input id="tsm-conf" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')confirmarTrocaSenhaMed()"></div>
     <div id="tsm-err" style="display:none;background:#FDEEEE;color:var(--red);border-radius:8px;padding:8px 12px;font-size:12.5px;margin-bottom:10px"></div>
     <button class="primary" style="width:100%" onclick="confirmarTrocaSenhaMed()">✅ Confirmar senha</button>
+  </div>
+</div>
+
+
+<!-- ══ MODAL: ATIVIDADES DETALHADAS ══ -->
+<div id="modal-atividades-med" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9400;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:20px;box-shadow:0 16px 60px rgba(0,0,0,.3);padding:32px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;position:relative">
+    <button onclick="fecharModalAtividades()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+    <div style="font-size:22px;font-weight:900;color:var(--navy);margin-bottom:4px">📈 Atividades</div>
+    <div id="modal-atv-body" style="margin-top:16px"></div>
+  </div>
+</div>
+
+
+<!-- ══ MODAL: PREVIEW PÁGINA DO MÉDICO (visão do paciente) ══ -->
+<div id="modal-preview-pagina" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9500;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto">
+  <div style="background:var(--soft);border-radius:20px;box-shadow:0 16px 60px rgba(0,0,0,.3);padding:24px;max-width:640px;width:100%;position:relative;margin:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div style="font-size:16px;font-weight:900;color:var(--navy)">👁 Visão do paciente</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Assim é como os responsáveis veem sua página</div>
+      </div>
+      <button onclick="document.getElementById('modal-preview-pagina').style.display='none'" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted)">✕</button>
+    </div>
+    <div id="modal-preview-body"></div>
   </div>
 </div>
 
