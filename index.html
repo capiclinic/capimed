@@ -14,6 +14,26 @@
   --bg:#EEF2F8;--card:#FFFFFF;--ink:#102033;--muted:#667085;--line:#D0D8E8;--soft:#F4F7FC;
   --shadow:0 4px 24px rgba(12,32,58,.09);
 }
+/* ── Modo Noturno ── */
+body.dark-mode{
+  --bg:#0D1117;--card:#161B22;--ink:#E6EDF3;--muted:#8B949E;--line:#30363D;--soft:#21262D;
+  --navy:#58A6FF;--navy2:#388BFD;--blue:#58A6FF;--shadow:0 4px 24px rgba(0,0,0,.4);
+}
+body.dark-mode .hero{background:#161B22;border-bottom:1px solid #30363D}
+body.dark-mode .panel{background:#161B22;border-color:#30363D}
+body.dark-mode .login-panel{background:#161B22;border:1px solid #30363D}
+body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0D1117;color:#E6EDF3;border-color:#30363D}
+body.dark-mode .tab{color:#8B949E}
+body.dark-mode .tab.active{color:#58A6FF;border-bottom-color:#58A6FF}
+body.dark-mode .step-btn{background:#21262D;color:#8B949E;border-color:#30363D}
+body.dark-mode .step-btn.active{background:#388BFD;color:white;border-color:#388BFD}
+body.dark-mode .primary{background:linear-gradient(135deg,#388BFD,#1455C0)}
+body.dark-mode .secondary{background:#21262D;color:#8B949E;border-color:#30363D}
+body.dark-mode #dark-mode-btn{background:#21262D;border-color:#30363D;color:#E6EDF3}
+body,body *{transition:background-color .25s,border-color .2s,color .2s}
+body.dark-mode .doc-storage-item,.dark-mode .file-card{background:#21262D}
+body.dark-mode .upload-zone{background:#21262D;border-color:#30363D}
+body.dark-mode .upload-zone:hover,.dark-mode .upload-zone.drag-over{background:#0D1117;border-color:#58A6FF}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
 .hero{background:#ffffff;color:var(--ink);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 var(--line),0 2px 12px rgba(12,32,58,.06)}
@@ -231,6 +251,10 @@ button.export{background:var(--teal);color:white}
     <button class="tab" id="tab-pac" onclick="goPaciente(this)">👨‍👩‍👧 Área do Paciente</button>
     <button class="tab" onclick="showPage('contato',this)">✉️ Fale Conosco</button>
   </nav>
+  <button id="dark-mode-btn" onclick="toggleDarkMode()" title="Modo noturno"
+    style="margin-left:12px;flex-shrink:0;background:none;border:1.5px solid var(--line);border-radius:10px;padding:6px 10px;font-size:18px;cursor:pointer;line-height:1;transition:.2s;color:var(--navy)">
+    🌙
+  </button>
 </div>
 </header>
 
@@ -2442,6 +2466,23 @@ function activateChat() {
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
+
+// ═══════════════════════════ MODO NOTURNO ═══════════════════════════
+function toggleDarkMode() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  const btn = document.getElementById('dark-mode-btn');
+  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('capikids_dark_mode', isDark ? '1' : '0');
+}
+// Restaurar preferência ao carregar
+(function() {
+  if (localStorage.getItem('capikids_dark_mode') === '1') {
+    document.body.classList.add('dark-mode');
+    const btn = document.getElementById('dark-mode-btn');
+    if (btn) btn.textContent = '☀️';
+  }
+})();
+
 // ══ FIREBASE CONFIG ══
 const firebaseConfig = {
   apiKey: "AIzaSyAsqLRfWwrgfR0XEE6b7M27gUK1r-fzL24",
