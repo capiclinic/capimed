@@ -671,7 +671,29 @@ button.export{background:var(--teal);color:white}
 <!-- ════════════════════ MÉDICOS (PAINEL) ════════════════════ -->
 <section id="medicos" class="page">
 
-  <!-- ══ CABEÇALHO DO PROFISSIONAL — acima de todas as abas ══ -->
+  <!-- Sub-tabs médico — nível superior -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="step-btn active" id="msub-perfil" onclick="showMedSub('perfil')">🙍 Meu Perfil</button>
+    <button class="step-btn" id="msub-pagina" onclick="showMedSub('pagina')">🌐 Minha Página</button>
+    <button class="step-btn" id="msub-atend" onclick="showMedSub('atend')">🩺 Atendimento</button>
+    <button class="step-btn" id="msub-tele" onclick="showMedSub('tele')">📹 Tele-atendimento</button>
+    <button class="step-btn" id="msub2" onclick="showMedSub(2)">📅 Agenda</button>
+    <button class="step-btn" id="msub3" onclick="showMedSub(3)">📤 Arquivos</button>
+    <!-- Aba Admin: visível apenas para o CRM 239138 -->
+    <button class="step-btn" id="msub-admin" onclick="showMedSub('admin')"
+      style="display:none;background:linear-gradient(135deg,#0B1F3A,#143B68);color:white;border-color:#143B68">
+      ⚙️ Admin
+    </button>
+    <div style="margin-left:auto;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:8px">
+      <span id="med-logged-name" style="font-weight:700;color:var(--navy)"></span>
+      <button class="secondary" style="padding:6px 12px;font-size:12px" onclick="logout('med')">Sair</button>
+    </div>
+  </div>
+
+  <!-- ─── SUB MEU PERFIL ─── -->
+  <div id="msub-panel-perfil">
+
+  <!-- ══ CABEÇALHO DO PROFISSIONAL ══ -->
   <!-- Perfil + Atividades lado a lado -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px" id="med-profile-row">
 
@@ -856,33 +878,17 @@ button.export{background:var(--teal);color:white}
 
   </div><!-- /med-profile-row -->
 
-  <!-- Sub-tabs médico — abaixo do perfil -->
-  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-    <button class="step-btn" onclick="abrirCadPac()" style="color:var(--green);border-color:rgba(23,138,74,.3);background:#F0FFF7">👶 Cadastrar Paciente</button>
-    <button class="step-btn active" id="msub-atend" onclick="showMedSub('atend')">🩺 Atendimento</button>
-    <button class="step-btn" id="msub-tele" onclick="showMedSub('tele')">📹 Tele-atendimento</button>
-    <button class="step-btn" id="msub-pacs" onclick="showMedSub('pacs')">👥 Meus Pacientes</button>
-    <button class="step-btn" id="msub1" onclick="showMedSub(1)">📁 Histórico</button>
-    <button class="step-btn" id="msub2" onclick="showMedSub(2)">📅 Agenda</button>
-    <button class="step-btn" id="msub3" onclick="showMedSub(3)">📤 Arquivos</button>
-    <button class="step-btn" id="msub-pagina" onclick="showMedSub('pagina')">🌐 Minha Página</button>
-    <!-- Aba Admin: visível apenas para o CRM 239138 -->
-    <button class="step-btn" id="msub-admin" onclick="showMedSub('admin')"
-      style="display:none;background:linear-gradient(135deg,#0B1F3A,#143B68);color:white;border-color:#143B68">
-      ⚙️ Admin
-    </button>
-    <div style="margin-left:auto;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:8px">
-      <span id="med-logged-name" style="font-weight:700;color:var(--navy)"></span>
-      <button class="secondary" style="padding:6px 12px;font-size:12px" onclick="logout('med')">Sair</button>
-    </div>
-  </div>
+  </div><!-- /msub-panel-perfil -->
 
-  <!-- ─── SUB ATENDIMENTO (Nova Consulta + Retorno) ─── -->
-  <div id="msub-panel-atend">
+  <!-- ─── SUB ATENDIMENTO (Meus Pacientes + Cadastrar Paciente + Nova Consulta + Retorno + Histórico) ─── -->
+  <div id="msub-panel-atend" style="display:none">
     <!-- Sub-tabs internas de atendimento -->
-    <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid var(--line);padding-bottom:10px">
+    <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid var(--line);padding-bottom:10px;flex-wrap:wrap">
+      <button class="step-btn" id="atend-sub-pacs" onclick="showAtendSub('pacs')">👥 Meus Pacientes</button>
+      <button class="step-btn" id="atend-sub-cad" onclick="abrirCadPac()" style="color:var(--green);border-color:rgba(23,138,74,.3);background:#F0FFF7">👶 Cadastrar Paciente</button>
       <button class="step-btn active" id="atend-sub0" onclick="showAtendSub(0)">📋 Nova Consulta</button>
-      <button class="step-btn" id="atend-sub1" onclick="showAtendSub(1)">🔄 Retorno / Puericultura</button>
+      <button class="step-btn" id="atend-sub1" onclick="showAtendSub('ret')">🔄 Retorno / Puericultura</button>
+      <button class="step-btn" id="atend-sub-hist" onclick="showAtendSub('hist')">📁 Histórico</button>
     </div>
 
   <!-- ─── SUB 0: NOVA CONSULTA ─── -->
@@ -1575,32 +1581,6 @@ button.export{background:var(--teal);color:white}
     </div>
   </div>
 
-  </div><!-- fim msub-panel-atend -->
-
-  <!-- ─── SUB TELE-ATENDIMENTO ─── -->
-  <div id="msub-panel-tele" style="display:none">
-    <div class="panel">
-      <div class="panel-head">
-        <div>
-          <h2>📹 Tele-atendimento</h2>
-          <p class="sub">Plataforma de consultas online — em breve</p>
-        </div>
-        <span class="chip chip-purple">Em configuração</span>
-      </div>
-      <div style="text-align:center;padding:48px 20px">
-        <div style="font-size:64px;margin-bottom:16px">📹</div>
-        <div style="font-size:18px;font-weight:900;color:var(--navy);margin-bottom:10px">Tele-atendimento CapiClinic</div>
-        <p style="font-size:13.5px;color:var(--muted);max-width:480px;margin:0 auto 24px;line-height:1.7">
-          A plataforma de videoatendimento online será integrada aqui em breve. Consultas, discussões de casos e retornos à distância — tudo dentro do CapiClinic.
-        </p>
-        <div style="background:var(--soft);border:1.5px dashed var(--line);border-radius:14px;padding:20px;max-width:400px;margin:0 auto">
-          <div style="font-size:12.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Plataforma a definir</div>
-          <div style="font-size:13px;color:var(--ink);line-height:1.6">A URL ou integração da ferramenta de vídeo será configurada pelo administrador. Possíveis opções: <b>Whereby, Google Meet, Jitsi Meet, Daily.co</b>.</div>
-        </div>
-        <div style="margin-top:20px;font-size:12px;color:var(--muted)">Para configurar, informe a plataforma escolhida ao administrador da CapiKids.</div>
-      </div>
-    </div>
-  </div>
 
   <!-- ─── SUB MEUS PACIENTES ─── -->
   <div id="msub-panel-pacs" style="display:none">
@@ -1638,6 +1618,42 @@ button.export{background:var(--teal);color:white}
     </div>
   </div>
 
+  <!-- ─── SUB 1: HISTÓRICO ─── -->
+  <div id="msub-panel-1" style="display:none">
+    <div class="panel">
+      <div class="panel-head"><div><h2>📁 Histórico de Atendimentos</h2></div><button class="export" onclick="showAtendSub(0)" style="padding:8px 14px;font-size:12px">+ Nova Consulta</button></div>
+      <div id="hist-list"><div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Nenhuma consulta registrada ainda.</div></div>
+    </div>
+  </div>
+
+  </div><!-- fim msub-panel-atend -->
+
+  <!-- ─── SUB TELE-ATENDIMENTO ─── -->
+  <div id="msub-panel-tele" style="display:none">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>📹 Tele-atendimento</h2>
+          <p class="sub">Plataforma de consultas online — em breve</p>
+        </div>
+        <span class="chip chip-purple">Em configuração</span>
+      </div>
+      <div style="text-align:center;padding:48px 20px">
+        <div style="font-size:64px;margin-bottom:16px">📹</div>
+        <div style="font-size:18px;font-weight:900;color:var(--navy);margin-bottom:10px">Tele-atendimento CapiClinic</div>
+        <p style="font-size:13.5px;color:var(--muted);max-width:480px;margin:0 auto 24px;line-height:1.7">
+          A plataforma de videoatendimento online será integrada aqui em breve. Consultas, discussões de casos e retornos à distância — tudo dentro do CapiClinic.
+        </p>
+        <div style="background:var(--soft);border:1.5px dashed var(--line);border-radius:14px;padding:20px;max-width:400px;margin:0 auto">
+          <div style="font-size:12.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Plataforma a definir</div>
+          <div style="font-size:13px;color:var(--ink);line-height:1.6">A URL ou integração da ferramenta de vídeo será configurada pelo administrador. Possíveis opções: <b>Whereby, Google Meet, Jitsi Meet, Daily.co</b>.</div>
+        </div>
+        <div style="margin-top:20px;font-size:12px;color:var(--muted)">Para configurar, informe a plataforma escolhida ao administrador da CapiKids.</div>
+      </div>
+    </div>
+  </div>
+
+
   <!-- Modal: Paciente selecionado em Meus Pacientes -->
   <div class="modal-bg" id="modal-pac-det">
     <div class="modal" style="max-width:780px">
@@ -1649,13 +1665,6 @@ button.export{background:var(--teal);color:white}
     </div>
   </div>
 
-  <!-- ─── SUB 1: HISTÓRICO ─── -->
-  <div id="msub-panel-1" style="display:none">
-    <div class="panel">
-      <div class="panel-head"><div><h2>📁 Histórico de Atendimentos</h2></div><button class="export" onclick="showMedSub(0)" style="padding:8px 14px;font-size:12px">+ Nova Consulta</button></div>
-      <div id="hist-list"><div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Nenhuma consulta registrada ainda.</div></div>
-    </div>
-  </div>
 
   <!-- ─── SUB 2: AGENDA ─── -->
   <div id="msub-panel-2" style="display:none">
@@ -2701,7 +2710,7 @@ const PAC_PASS_PADRAO = 'capikids123';
 
 // ══ ESTADO ══
 let loggedMed = false, medCRM = '', loggedPac = false, pacName = '', pacId = '';
-let currentStep = 0, currentMedSub = 0, currentPacSub = 0;
+let currentStep = 0, currentMedSub = 'perfil', currentPacSub = 0;
 let cidCount = 0, rxCount = 0;
 let growthChart = null, growthChartPac = null;
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
@@ -2933,6 +2942,7 @@ function _activateMedSession(u) {
     document.getElementById('f-dtcons').value = new Date().toISOString().slice(0, 10);
   document.getElementById('growth-sexo').value = 'M';
   showPage('medicos', document.getElementById('tab-med'));
+  showMedSub('perfil');
   renderHistorico(); renderMedCal(); updateGrowthChart(); renderMedProfile(u); activateChat();
   configurarAbasAdmin(u);
   attachDraftListeners();
@@ -3012,23 +3022,22 @@ function logout(role) {
 }
 
 // ═══════════════════════════ SUB-ABAS ═══════════════════════════
-const MED_SUBS = ['atend','tele','pacs',0,1,2,3,'pagina','admin'];
+const MED_SUBS = ['perfil','pagina','atend','tele',2,3,'admin'];
 const ADMIN_CRMS = ['239138','239598']; // Admins: Gabriel e Juliano
 const ADMIN_CRM = '239138'; // mantido para compatibilidade
 
 function showMedSub(n) {
   MED_SUBS.forEach(i => {
     const panel = document.getElementById('msub-panel-'+i);
-    const btnId = i==='atend'?'msub-atend':i==='tele'?'msub-tele':i==='pacs'?'msub-pacs':i==='admin'?'msub-admin':i==='docs'?'msub-docs':i==='pagina'?'msub-pagina':'msub'+i;
+    const btnId = i==='perfil'?'msub-perfil':i==='atend'?'msub-atend':i==='tele'?'msub-tele':i==='admin'?'msub-admin':i==='pagina'?'msub-pagina':'msub'+i;
     const btn   = document.getElementById(btnId);
     if (panel) panel.style.display = (i===n) ? 'block' : 'none';
     if (btn)   btn.classList.toggle('active', i===n);
   });
   currentMedSub = n;
-  if (n===1)        renderHistorico();
   if (n===2)        renderMedCal();
   if (n===3)        renderArquivosMed();
-  if (n==='pacs')   { renderMeusPacientes(''); renderSolicitacoesMedico(); }
+  if (n==='atend')  showAtendSub(currentAtendSub);
   if (n==='pagina') renderPaginaMedico();
   if (n==='admin')  { renderAdminPacientes(''); renderAdminMedicos(); renderMedicosPendentes(); }
 }
@@ -3191,14 +3200,19 @@ async function renderAdminMedicos() {
 }
 
 let currentAtendSub = 0;
+const ATEND_SUBS = ['pacs', 0, 'ret', 'hist'];
 function showAtendSub(n) {
-  [0,'ret'].forEach(i => {
-    const panel = document.getElementById('msub-panel-'+(i===0?'0':'ret'));
-    const btn   = document.getElementById('atend-sub'+(i===0?'0':'1'));
-    if (panel) panel.style.display = (i===n || (n===1&&i==='ret') || (n==='ret'&&i==='ret')) ? 'block' : 'none';
-    if (btn)   btn.classList.toggle('active', (n===0&&i===0)||(n===1&&i==='ret')||(n==='ret'&&i==='ret'));
+  const panelIdFor = i => i==='pacs' ? 'pacs' : i===0 ? '0' : i==='ret' ? 'ret' : i==='hist' ? '1' : i;
+  const btnIdFor   = i => i==='pacs' ? 'atend-sub-pacs' : i===0 ? 'atend-sub0' : i==='ret' ? 'atend-sub1' : i==='hist' ? 'atend-sub-hist' : 'atend-sub'+i;
+  ATEND_SUBS.forEach(i => {
+    const panel = document.getElementById('msub-panel-'+panelIdFor(i));
+    const btn   = document.getElementById(btnIdFor(i));
+    if (panel) panel.style.display = (i===n) ? 'block' : 'none';
+    if (btn)   btn.classList.toggle('active', i===n);
   });
   currentAtendSub = n;
+  if (n==='pacs') { renderMeusPacientes(''); renderSolicitacoesMedico(); }
+  if (n==='hist') renderHistorico();
 }
 
 
@@ -3640,7 +3654,7 @@ function iniciarConsultaPac(nome) {
 }
 function iniciarRetornoPac(nome) {
   showMedSub('atend');
-  showAtendSub(1);
+  showAtendSub('ret');
   setTimeout(()=>selecionarRetorno(nome), 100);
 }
 
@@ -3852,7 +3866,7 @@ async function salvarRetorno() {
     dot.className='dot saved'; txt.textContent='Salvo em '+new Date().toLocaleTimeString('pt-BR');
     toast('Retorno de '+base.nome+' salvo com sucesso! ✅','ok');
     cancelarRetorno(true);
-    showMedSub(1); // abrir histórico
+    showMedSub('atend'); showAtendSub('hist'); // abrir histórico
   }, 500);
 }
 function showPacSub(n) {
@@ -6458,6 +6472,7 @@ function usarPacienteDuplicata() {
   toast('Paciente carregado — ID: ' + _cadDuplicataId, 'ok');
   // Preenche o campo de busca na Nova Consulta com o ID e abre atendimento
   showMedSub('atend');
+  showAtendSub(0);
   const buscaInput = document.getElementById('busca-input');
   if (buscaInput) { buscaInput.value = _cadDuplicataId; buscaPaciente(_cadDuplicataId); }
 }
@@ -7488,7 +7503,7 @@ async function renderPaginaMedico() {
 
       <!-- Disponibilidade -->
       <div class="panel">
-        <div class="panel-head"><div><h2>📅 Agenda — Próximos horários</h2></div><button class="secondary" style="padding:6px 12px;font-size:11.5px" onclick="showMedSub('atend')">🗓 Gerenciar</button></div>
+        <div class="panel-head"><div><h2>📅 Agenda — Próximos horários</h2></div><button class="secondary" style="padding:6px 12px;font-size:11.5px" onclick="showMedSub(2)">🗓 Gerenciar</button></div>
         ${slotsDisp.length ? `
         <div style="display:flex;flex-direction:column;gap:8px">
           ${slotsDisp.map(s => `
