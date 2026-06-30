@@ -244,6 +244,7 @@ button.export{background:var(--teal);color:white}
 .slot-free:hover{background:#d0efde}
 .slot-busy{background:var(--soft);color:var(--muted);border-color:var(--line);cursor:default}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes capiPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
 /* ── CAPIVARA VIRTUAL ── */
 @keyframes capyPulse{0%,100%{box-shadow:0 0 24px rgba(23,138,74,.3);border-color:#178A4A}50%{box-shadow:0 0 44px rgba(23,138,74,.6);border-color:#7EFFA0}}
 @keyframes capyPulseWarn{0%,100%{box-shadow:0 0 24px rgba(199,138,20,.3);border-color:#C78A14}50%{box-shadow:0 0 44px rgba(199,138,20,.6);border-color:#FFD980}}
@@ -1690,13 +1691,96 @@ button.export{background:var(--teal);color:white}
 
   <!-- ─── SUB 3: ARQUIVOS ─── -->
   <div id="msub-panel-3" style="display:none">
-    <div class="panel">
-      <div class="panel-head"><div><h2>📤 Arquivos e Materiais</h2></div><span class="chip chip-teal">Disponível para pacientes</span></div>
-      <p class="sub" style="margin-bottom:16px">Gerencie os arquivos que ficam disponíveis para os responsáveis na Área do Paciente.</p>
-      <div class="field" style="margin-bottom:12px"><label>Novo arquivo / material (descrição)</label><textarea id="new-file-desc" placeholder="Ex.: Tabela de Introdução Alimentar — SBP 2024&#10;Calendário Vacinal PNI 2024&#10;Orientações pós-febre"></textarea></div>
-      <div class="actions"><button class="primary" onclick="addArquivo()">+ Publicar arquivo</button></div>
-      <div id="arquivo-list" style="margin-top:16px"></div>
+
+    <!-- ── UPLOAD NOVO ARQUIVO ── -->
+    <div class="panel" style="margin-bottom:14px">
+      <div class="panel-head">
+        <div><h2>📁 Meu Acervo de Arquivos</h2><p class="sub">Adicione arquivos do seu computador ou de fora do app (PDF, imagens, documentos). Limite: 50 MB por arquivo.</p></div>
+        <button class="primary" style="padding:8px 16px;font-size:12.5px;white-space:nowrap" onclick="document.getElementById('arq-upload-input').click()">
+          ➕ Adicionar arquivo
+        </button>
+      </div>
+
+      <!-- Input de upload oculto -->
+      <input type="file" id="arq-upload-input" accept="*/*" style="display:none" onchange="uploadArquivoAcervo(this)">
+
+      <!-- Barra de progresso de upload -->
+      <div id="arq-upload-progress-wrap" style="display:none;margin-top:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px">
+          <span id="arq-upload-nome-prog">Enviando…</span>
+          <span id="arq-upload-pct">0%</span>
+        </div>
+        <div style="background:var(--soft);border-radius:8px;height:8px;overflow:hidden">
+          <div id="arq-upload-bar" style="height:100%;background:linear-gradient(90deg,var(--blue),var(--teal));border-radius:8px;width:0%;transition:width .3s"></div>
+        </div>
+      </div>
+
+      <!-- Filtro por categoria -->
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Filtrar:</span>
+        <button class="step-btn active" id="arq-filtro-todos" onclick="filtrarAcervo('todos')">📂 Todos</button>
+        <button class="step-btn" id="arq-filtro-orientacao" onclick="filtrarAcervo('orientacao')">📋 Orientação</button>
+        <button class="step-btn" id="arq-filtro-receita" onclick="filtrarAcervo('receita')">💊 Receita</button>
+        <button class="step-btn" id="arq-filtro-prontuario" onclick="filtrarAcervo('prontuario')">🗂️ Prontuário</button>
+        <button class="step-btn" id="arq-filtro-exame" onclick="filtrarAcervo('exame')">🔬 Exame</button>
+        <button class="step-btn" id="arq-filtro-vacina" onclick="filtrarAcervo('vacina')">💉 Vacina</button>
+        <button class="step-btn" id="arq-filtro-outros" onclick="filtrarAcervo('outros')">📎 Outros</button>
+      </div>
     </div>
+
+    <!-- ── LISTA DO ACERVO ── -->
+    <div id="acervo-lista" style="display:flex;flex-direction:column;gap:10px">
+      <div style="color:var(--muted);font-size:13px;text-align:center;padding:24px">⏳ Carregando acervo…</div>
+    </div>
+
+    <!-- Modal: Editar metadados do arquivo -->
+    <div id="modal-arq-meta" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9600;align-items:center;justify-content:center;padding:16px">
+      <div style="background:white;border-radius:20px;padding:28px;max-width:480px;width:100%;box-shadow:0 16px 60px rgba(0,0,0,.3);position:relative">
+        <button onclick="document.getElementById('modal-arq-meta').style.display='none'" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+        <h2 style="margin:0 0 4px;font-size:17px">📝 Detalhes do arquivo</h2>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:18px">Preencha o nome e a categoria antes de salvar no acervo.</p>
+        <input type="hidden" id="arq-meta-uid">
+        <div class="field" style="margin-bottom:12px">
+          <label>Nome / Descrição do arquivo</label>
+          <input type="text" id="arq-meta-nome" placeholder="Ex.: Receita de Amoxicilina — João 10/06">
+        </div>
+        <div class="field" style="margin-bottom:18px">
+          <label>Categoria</label>
+          <select id="arq-meta-cat">
+            <option value="orientacao">📋 Orientação</option>
+            <option value="receita">💊 Receita</option>
+            <option value="prontuario">🗂️ Prontuário</option>
+            <option value="exame">🔬 Exame / Solicitação</option>
+            <option value="vacina">💉 Vacina / Caderneta</option>
+            <option value="outros">📎 Outros</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="primary" style="flex:1" onclick="salvarMetaArquivo()">✅ Salvar no acervo</button>
+          <button onclick="document.getElementById('modal-arq-meta').style.display='none'" style="background:white;color:var(--navy);border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Encaminhar arquivo para paciente -->
+    <div id="modal-arq-enviar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9600;align-items:center;justify-content:center;padding:16px">
+      <div style="background:white;border-radius:20px;padding:28px;max-width:520px;width:100%;box-shadow:0 16px 60px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto;position:relative">
+        <button onclick="document.getElementById('modal-arq-enviar').style.display='none'" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+        <h2 style="margin:0 0 4px;font-size:17px">📤 Encaminhar arquivo</h2>
+        <p id="modal-arq-enviar-nome" style="font-size:12.5px;color:var(--muted);margin-bottom:16px"></p>
+        <input type="hidden" id="arq-enviar-uid">
+        <div class="field" style="margin-bottom:14px">
+          <label>Mensagem para o responsável (opcional)</label>
+          <textarea id="arq-enviar-msg" placeholder="Ex.: Segue a receita da consulta de hoje. Qualquer dúvida, entre em contato." style="min-height:70px"></textarea>
+        </div>
+        <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:10px">Selecione o(s) paciente(s):</div>
+        <div id="modal-arq-pacs-lista" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;margin-bottom:16px">
+          <div style="color:var(--muted);font-size:13px;padding:12px;text-align:center">⏳ Carregando pacientes…</div>
+        </div>
+        <button class="primary" style="width:100%" onclick="confirmarEnvioArquivo()">📤 Encaminhar para selecionados</button>
+      </div>
+    </div>
+
   </div>
 
   <!-- ─── SUB PÁGINA DO MÉDICO ─── -->
@@ -1754,6 +1838,15 @@ button.export{background:var(--teal);color:white}
           <div class="field">
             <label>E-mail público</label>
             <input id="pag-email-pub" type="email" placeholder="contato@seuconsultorio.com">
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>🔗 Link externo de agendamento</label>
+            <input id="pag-link-externo" type="url" placeholder="Ex.: https://meuconsultorio.com.br/agende ou Doctoralia, etc.">
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">Caso você tenha consultório/agenda registrada em outro site, cole o link aqui. Ele aparecerá na seção “Agende sua consulta”.</div>
+          </div>
+          <div class="field">
+            <label>Texto do botão externo (opcional)</label>
+            <input id="pag-link-externo-label" type="text" placeholder="Ex.: Agendar pelo Doctoralia">
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:12px">
@@ -2054,18 +2147,22 @@ button.export{background:var(--teal);color:white}
   <!-- ─── PSUB 3: ARQUIVOS ─── -->
   <div id="psub-panel-3" style="display:none">
     <div class="panel">
-      <div class="panel-head"><h2>📄 Arquivos e Materiais</h2></div>
-      <p class="sub" style="margin-bottom:12px">Materiais disponibilizados pela equipe médica e documentos do paciente.</p>
-      <div id="pac-arquivos">
-        <div class="file-grid">
-          <div class="file-card"><div class="file-icon" style="background:#E8F7EF">🥗</div><div><div class="file-name">Introdução Alimentar</div><div class="file-sub">Orientações SBP 2024</div></div></div>
-          <div class="file-card"><div class="file-icon" style="background:#EAF2FF">💉</div><div><div class="file-name">Calendário Vacinal</div><div class="file-sub">PNI 2024</div></div></div>
-          <div class="file-card"><div class="file-icon" style="background:#FFF0E8">🌡️</div><div><div class="file-name">Manejo da Febre</div><div class="file-sub">Orientações para os pais</div></div></div>
-          <div class="file-card"><div class="file-icon" style="background:#F3EEFF">😴</div><div><div class="file-name">Sono Seguro</div><div class="file-sub">Prevenção da morte súbita</div></div></div>
-          <div class="file-card"><div class="file-icon" style="background:#E0F7F5">🦷</div><div><div class="file-name">Saúde Bucal Infantil</div><div class="file-sub">Higiene oral desde o nascimento</div></div></div>
-          <div class="file-card"><div class="file-icon" style="background:#FFF5DF">📋</div><div><div class="file-name">Receituário</div><div class="file-sub">Última consulta</div></div></div>
-        </div>
-        <div id="pac-arq-extra"></div>
+      <div class="panel-head"><div><h2>📄 Arquivos Recebidos</h2></div><span class="chip chip-blue" id="pac-arq-count">—</span></div>
+      <p class="sub" style="margin-bottom:16px">Documentos, receitas, exames e orientações encaminhados pela equipe médica.</p>
+
+      <!-- Filtro por categoria -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+        <button class="step-btn active" id="pac-arq-filtro-todos" onclick="filtrarArqPac('todos')">📂 Todos</button>
+        <button class="step-btn" id="pac-arq-filtro-orientacao" onclick="filtrarArqPac('orientacao')">📋 Orientação</button>
+        <button class="step-btn" id="pac-arq-filtro-receita" onclick="filtrarArqPac('receita')">💊 Receita</button>
+        <button class="step-btn" id="pac-arq-filtro-prontuario" onclick="filtrarArqPac('prontuario')">🗂️ Prontuário</button>
+        <button class="step-btn" id="pac-arq-filtro-exame" onclick="filtrarArqPac('exame')">🔬 Exame</button>
+        <button class="step-btn" id="pac-arq-filtro-vacina" onclick="filtrarArqPac('vacina')">💉 Vacina</button>
+        <button class="step-btn" id="pac-arq-filtro-outros" onclick="filtrarArqPac('outros')">📎 Outros</button>
+      </div>
+
+      <div id="pac-arq-lista" style="display:flex;flex-direction:column;gap:10px">
+        <div style="color:var(--muted);font-size:13px;text-align:center;padding:24px">⏳ Carregando arquivos…</div>
       </div>
     </div>
   </div>
@@ -2191,23 +2288,33 @@ button.export{background:var(--teal);color:white}
   <!-- conversa direta -->
   <div id="chat-conv-panel" style="display:none;flex-direction:column;flex:1;overflow:hidden">
     <div style="padding:8px 12px;background:var(--soft);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-shrink:0">
-      <button onclick="voltarChatContatos()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--blue);padding:0;font-weight:700;font-family:'DM Sans',sans-serif">← Voltar</button>
+      <button onclick="voltarChatContatos()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--blue);padding:0;font-weight:700;font-family:'DM Sans',sans-serif">←</button>
+      <span id="chat-conv-avatar"></span>
       <div style="flex:1;font-size:13px;font-weight:800;color:var(--navy)" id="chat-conv-title">—</div>
       <div style="width:8px;height:8px;border-radius:50%;background:var(--green)" title="Online"></div>
     </div>
     <div id="chat-messages" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:7px;background:#F8FAFF">
       <div style="text-align:center;font-size:11px;color:var(--muted);padding:8px" id="chat-conv-start"></div>
     </div>
-    <div style="border-top:1px solid var(--line);padding:8px 10px;display:flex;gap:7px;align-items:flex-end;flex-shrink:0;background:white">
+    <!-- Barra de gravação de áudio (oculta por padrão) -->
+    <div id="chat-rec-bar" style="display:none;border-top:1px solid var(--line);padding:8px 12px;flex-shrink:0;background:#FFF5F5;align-items:center;gap:10px">
+      <div style="width:11px;height:11px;border-radius:50%;background:#E54B4B;animation:capiPulse 1s infinite"></div>
+      <div style="flex:1;font-size:13px;font-weight:800;color:#E54B4B">Gravando… <span id="chat-rec-timer">0:00</span></div>
+      <button onclick="cancelarGravacaoAudio()" style="background:var(--soft);border:1px solid var(--line);border-radius:9px;width:34px;height:34px;cursor:pointer;font-size:14px" title="Cancelar">🗑</button>
+      <button onclick="pararEnviarAudio()" style="background:var(--blue);color:white;border:none;border-radius:9px;width:34px;height:34px;cursor:pointer;font-size:15px" title="Enviar áudio">➤</button>
+    </div>
+    <div id="chat-input-bar" style="border-top:1px solid var(--line);padding:8px 10px;display:flex;gap:7px;align-items:flex-end;flex-shrink:0;background:white">
       <div style="flex:1;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:7px 11px">
         <textarea id="chat-input" placeholder="Mensagem…" rows="1"
           style="width:100%;border:0;outline:0;background:transparent;font-size:13px;font-family:'DM Sans',sans-serif;resize:none;line-height:1.4;max-height:80px"
           oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg()}"></textarea>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <button onclick="sendChatMsg()" style="background:var(--blue);color:white;border:none;border-radius:10px;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">➤</button>
-        <label style="background:var(--soft);border:1px solid var(--line);border-radius:10px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px">📎<input type="file" accept="image/*,.pdf,.doc,.docx" style="display:none" onchange="sendChatFile(this)"></label>
+      <div style="display:flex;gap:4px;align-items:center">
+        <label style="background:var(--soft);border:1px solid var(--line);border-radius:10px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px" title="Enviar foto">📷<input type="file" accept="image/*" capture="environment" style="display:none" onchange="sendChatFile(this)"></label>
+        <label style="background:var(--soft);border:1px solid var(--line);border-radius:10px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px" title="Anexar arquivo">📎<input type="file" accept="image/*,.pdf,.doc,.docx,.txt" style="display:none" onchange="sendChatFile(this)"></label>
+        <button id="chat-mic-btn" onclick="iniciarGravacaoAudio()" style="background:var(--soft);border:1px solid var(--line);border-radius:10px;width:36px;height:36px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center" title="Gravar áudio">🎤</button>
+        <button onclick="sendChatMsg()" style="background:var(--blue);color:white;border:none;border-radius:10px;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center" title="Enviar">➤</button>
       </div>
     </div>
   </div>
@@ -2351,10 +2458,39 @@ function searchExame(q) {
 // ════════════ CHAT INTERNO — Firebase Realtime Database ════════════
 let chatOpen = false;
 let chatDest = null;
-let chatListener = null; // listener ativo da conversa atual
+let chatListener = null;        // listener ativo da conversa atual (render)
+let chatUnread = {};            // { crm: nº de mensagens não lidas }
+let chatUnreadInit = {};        // controla 1ª carga p/ não notificar histórico
+const MED_PHOTOS = {};          // cache de fotos de perfil { crm: dataURL/URL }
+let medRecorder = null, medRecChunks = [], medRecTimer = null, medRecStart = 0, medRecStream = null;
 
 function chatKey(crmA, crmB) {
   return [crmA, crmB].sort().join('_');
+}
+
+// Avatar do médico: usa foto de perfil se disponível, senão emoji
+function avatarHTML(crm, size) {
+  const s = size || 40;
+  const foto = MED_PHOTOS[crm];
+  if (foto) {
+    return `<div style="width:${s}px;height:${s}px;border-radius:50%;overflow:hidden;flex-shrink:0;border:1px solid var(--line)">
+      <img src="${foto}" style="width:100%;height:100%;object-fit:cover;display:block">
+    </div>`;
+  }
+  return `<div style="width:${s}px;height:${s}px;border-radius:50%;background:linear-gradient(135deg,#EAF2FF,#B5D4F4);display:flex;align-items:center;justify-content:center;font-size:${Math.round(s*0.45)}px;flex-shrink:0">👨‍⚕️</div>`;
+}
+
+// Carrega (e mantém atualizadas) as fotos de perfil de todos os médicos
+function carregarFotosMedicos() {
+  Object.keys(MED_NAMES).forEach(crm => {
+    db.ref('medicos/' + crm + '/photo').on('value', snap => {
+      const f = snap.val();
+      if (f) MED_PHOTOS[crm] = f; else delete MED_PHOTOS[crm];
+      // Atualiza avatar do contato em tempo real, se a lista estiver visível
+      const cEl = document.getElementById('avatar-' + crm);
+      if (cEl) cEl.outerHTML = `<span id="avatar-${crm}">${avatarHTML(crm)}</span>`;
+    });
+  });
 }
 
 function toggleChat() {
@@ -2363,9 +2499,9 @@ function toggleChat() {
   win.style.display = chatOpen ? 'flex' : 'none';
   if (chatOpen) {
     renderChatContatos();
-    document.getElementById('chat-badge').style.display = 'none';
   } else {
     desconectarChatListener();
+    if (medRecorder) cancelarGravacaoAudio();
   }
 }
 
@@ -2377,22 +2513,21 @@ function renderChatContatos() {
   const outros = Object.entries(MED_NAMES).filter(([crm]) => crm !== medCRM);
   const el = document.getElementById('chat-contacts-list');
 
-  // Renderizar contatos e buscar preview da última mensagem
   el.innerHTML = outros.map(([crm, nome]) => {
     const nomeShort = nome.split('(')[0].trim();
     return `<div id="contact-${crm}" onclick="abrirConversa('${crm}')"
       style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;margin-bottom:4px;transition:.12s"
       onmouseover="this.style.background='var(--soft)'" onmouseout="this.style.background='transparent'">
-      <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#EAF2FF,#B5D4F4);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">👨‍⚕️</div>
+      <span id="avatar-${crm}">${avatarHTML(crm)}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:800;color:var(--navy)">${nomeShort}</div>
         <div id="preview-${crm}" style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</div>
       </div>
-      <div id="badge-${crm}" style="display:none;background:var(--blue);color:white;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:900;align-items:center;justify-content:center">•</div>
+      <div id="badge-${crm}" style="display:none;background:var(--blue);color:white;border-radius:11px;min-width:20px;height:20px;padding:0 6px;font-size:11px;font-weight:900;align-items:center;justify-content:center">0</div>
     </div>`;
   }).join('');
 
-  // Buscar preview de cada conversa no Firebase
+  // Preview da última mensagem + aplica badges já calculados
   outros.forEach(([crm]) => {
     const key = chatKey(medCRM, crm);
     db.ref(`chats/${key}`).limitToLast(1).on('value', snap => {
@@ -2401,10 +2536,19 @@ function renderChatContatos() {
       if (msgs && prev) {
         const ultima = Object.values(msgs)[0];
         const prefixo = ultima.de === medCRM ? 'Você: ' : '';
-        prev.textContent = prefixo + (ultima.texto||'📎 Arquivo').slice(0,40);
+        prev.textContent = prefixo + previewTexto(ultima).slice(0, 40);
       }
     });
   });
+
+  atualizarBadgesContatos();
+}
+
+function previewTexto(m) {
+  if (m.tipo === 'imagem')  return '📷 Foto';
+  if (m.tipo === 'audio')   return '🎤 Áudio';
+  if (m.tipo === 'arquivo') return '📎 ' + (m.nomeArquivo || 'Arquivo');
+  return m.texto || '';
 }
 
 function abrirConversa(crm) {
@@ -2416,12 +2560,12 @@ function abrirConversa(crm) {
   conv.style.display = 'flex';
   document.getElementById('chat-conv-title').textContent = nomeShort;
   document.getElementById('chat-dest-label').textContent = 'Com ' + nomeShort;
+  const convAv = document.getElementById('chat-conv-avatar');
+  if (convAv) convAv.innerHTML = avatarHTML(crm, 28);
 
-  // Limpar mensagens anteriores
   const box = document.getElementById('chat-messages');
   box.innerHTML = `<div style="text-align:center;font-size:11px;color:var(--muted);padding:8px">Início da conversa com ${nomeShort}</div>`;
 
-  // Desconectar listener anterior e criar novo
   desconectarChatListener();
   const key = chatKey(medCRM, crm);
   const ref = db.ref(`chats/${key}`).limitToLast(80);
@@ -2430,33 +2574,70 @@ function abrirConversa(crm) {
     const msgs = snap.val();
     box.innerHTML = `<div style="text-align:center;font-size:11px;color:var(--muted);padding:8px">Início da conversa com ${nomeShort}</div>`;
     if (msgs) {
-      Object.values(msgs).forEach(m => renderMsgFirebase(m, box));
+      Object.entries(msgs).forEach(([id, m]) => renderMsgFirebase(m, box, id, key));
     }
     box.scrollTop = box.scrollHeight;
+    // Marca como lidas as mensagens recebidas (visto azul + zera não lidas)
+    marcarLidos(key, msgs);
   });
 
   document.getElementById('chat-input').focus();
 }
 
-function renderMsgFirebase(m, box) {
+// Marca como lidas as mensagens recebidas do interlocutor
+function marcarLidos(key, msgs) {
+  if (!msgs) return;
+  Object.entries(msgs).forEach(([id, m]) => {
+    if (m.de !== medCRM && !m.lido) {
+      db.ref(`chats/${key}/${id}/lido`).set(true);
+    }
+  });
+}
+
+function renderMsgFirebase(m, box, id, key) {
   const proprio = m.de === medCRM;
   const div = document.createElement('div');
   div.style.cssText = `display:flex;justify-content:${proprio?'flex-end':'flex-start'};margin-bottom:4px`;
+
   let content = '';
   if (m.tipo === 'imagem') {
-    content = `<img src="${m.dados}" style="max-width:180px;border-radius:8px;display:block">`;
+    const src = m.url || m.dados;
+    content = `<img src="${src}" onclick="window.open('${src}','_blank')" style="max-width:190px;border-radius:8px;display:block;cursor:pointer">`;
+  } else if (m.tipo === 'audio') {
+    content = `<audio controls src="${m.url}" style="max-width:200px;height:38px;display:block"></audio>`;
   } else if (m.tipo === 'arquivo') {
-    content = `<div style="display:flex;align-items:center;gap:6px;font-size:12px">📎 ${m.nomeArquivo}</div>`;
+    const inner = `<div style="display:flex;align-items:center;gap:6px;font-size:12px">📎 ${m.nomeArquivo||'Arquivo'}</div>`;
+    content = m.url
+      ? `<a href="${m.url}" target="_blank" download style="text-decoration:none;color:inherit">${inner}</a>`
+      : inner;
   } else {
-    content = `<div style="font-size:13px;line-height:1.5;word-break:break-word">${m.texto}</div>`;
+    content = `<div style="font-size:13px;line-height:1.5;word-break:break-word">${(m.texto||'').replace(/</g,'&lt;')}</div>`;
   }
+
+  // Botão "salvar no acervo" para arquivos/fotos/áudios recebidos (com URL no Storage)
+  let salvarBtn = '';
+  if (!proprio && m.url && (m.tipo === 'imagem' || m.tipo === 'arquivo' || m.tipo === 'audio')) {
+    const nomeArq = (m.nomeArquivo || (m.tipo === 'audio' ? 'Áudio do chat' : 'Arquivo do chat')).replace(/'/g, "\\'");
+    salvarBtn = `<button onclick="salvarChatNoAcervo('${encodeURIComponent(m.url)}','${nomeArq}','${m.tipo}',this)"
+      style="margin-top:5px;background:#EAF2FF;border:none;border-radius:7px;padding:3px 9px;font-size:10px;font-weight:800;color:var(--blue);cursor:pointer;font-family:'DM Sans',sans-serif">💾 Salvar em Arquivos</button>`;
+  }
+
+  // Visto: ✓ enviado / ✓✓ azul quando lido (apenas nas próprias mensagens)
+  let visto = '';
+  if (proprio) {
+    const azul = m.lido ? '#56C2FF' : 'rgba(255,255,255,.6)';
+    const ticks = m.lido ? '✓✓' : '✓';
+    visto = `<span style="font-size:10px;color:${azul};margin-left:5px;font-weight:900">${ticks}</span>`;
+  }
+
   const bg   = proprio ? 'linear-gradient(135deg,var(--blue),#1455C0)' : 'white';
   const clr  = proprio ? 'white' : 'var(--ink)';
   const bord = proprio ? '' : 'border:1px solid var(--line);';
   div.innerHTML = `<div style="max-width:80%;background:${bg};color:${clr};${bord}border-radius:12px;padding:8px 12px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
     ${!proprio?`<div style="font-size:9px;font-weight:800;opacity:.6;margin-bottom:3px">${(MED_NAMES[m.de]||m.de).split('(')[0].trim()}</div>`:''}
     ${content}
-    <div style="font-size:9px;opacity:.55;text-align:right;margin-top:4px">${m.ts||''}</div>
+    ${salvarBtn}
+    <div style="font-size:9px;opacity:.55;text-align:right;margin-top:4px">${m.ts||''}${visto}</div>
   </div>`;
   box.appendChild(div);
 }
@@ -2471,6 +2652,7 @@ function desconectarChatListener() {
 
 function voltarChatContatos() {
   desconectarChatListener();
+  if (medRecorder) cancelarGravacaoAudio();
   chatDest = null;
   document.getElementById('chat-conv-panel').style.display = 'none';
   document.getElementById('chat-select-panel').style.display = 'block';
@@ -2485,71 +2667,198 @@ function sendChatMsg() {
   if (!txt) return;
 
   const key = chatKey(medCRM, chatDest);
-  const msg = {
+  db.ref(`chats/${key}`).push({
     tipo: 'texto',
     texto: txt,
     de: medCRM,
+    lido: false,
     ts: new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}),
-  };
-
-  db.ref(`chats/${key}`).push(msg)
-    .catch(e => toast('Erro ao enviar mensagem: ' + e.message, 'err'));
+  }).catch(e => toast('Erro ao enviar mensagem: ' + e.message, 'err'));
 
   inp.value = '';
   inp.style.height = 'auto';
 }
 
+// ── Envio de FOTO / ARQUIVO (via Firebase Storage) ──
 function sendChatFile(input) {
-  if (!chatDest) return;
+  if (!chatDest) { input.value = ''; return; }
   const file = input.files[0];
   if (!file) return;
+  input.value = '';
+
+  const MAX = 25 * 1024 * 1024;
+  if (file.size > MAX) { toast('Arquivo excede o limite de 25 MB.', 'err'); return; }
 
   const isImg = file.type.startsWith('image/');
-  const reader = new FileReader();
-  reader.onload = e => {
-    const key = chatKey(medCRM, chatDest);
-    const msg = {
+  const key = chatKey(medCRM, chatDest);
+  const uid = 'cm_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  const safeName = file.name.replace(/[^\w.\-]/g, '_');
+  const ref = storage.ref('chat_media/' + key + '/' + uid + '_' + safeName);
+
+  toast('Enviando ' + (isImg ? 'foto' : 'arquivo') + '…', 'info');
+  ref.put(file).then(() => ref.getDownloadURL()).then(url => {
+    db.ref(`chats/${key}`).push({
       tipo: isImg ? 'imagem' : 'arquivo',
-      dados: isImg ? e.target.result : null,
+      url,
       nomeArquivo: file.name,
+      tamanho: file.size,
       de: medCRM,
+      lido: false,
       ts: new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}),
-    };
-    db.ref(`chats/${key}`).push(msg)
-      .catch(e => toast('Erro ao enviar arquivo: ' + e.message, 'err'));
-  };
-  if (isImg) reader.readAsDataURL(file);
-  else reader.readAsText(file);
-  input.value = '';
+    });
+  }).catch(e => toast('Erro ao enviar: ' + e.message, 'err'));
 }
 
-// Funções mantidas por compatibilidade (não mais usadas ativamente)
-function saveChatLocal() {}
-function loadChatLocal() {}
+// ── Gravação de ÁUDIO ──
+async function iniciarGravacaoAudio() {
+  if (!chatDest) { toast('Abra uma conversa primeiro.', 'err'); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast('Gravação de áudio não suportada neste dispositivo.', 'err'); return;
+  }
+  try {
+    medRecStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    medRecChunks = [];
+    const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+               : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
+    medRecorder = mime ? new MediaRecorder(medRecStream, { mimeType: mime })
+                       : new MediaRecorder(medRecStream);
+    medRecorder.ondataavailable = e => { if (e.data.size) medRecChunks.push(e.data); };
+    medRecorder.onstop = enviarAudioGravado;
+    medRecorder.start();
+
+    document.getElementById('chat-input-bar').style.display = 'none';
+    const bar = document.getElementById('chat-rec-bar');
+    bar.style.display = 'flex';
+    medRecStart = Date.now();
+    document.getElementById('chat-rec-timer').textContent = '0:00';
+    medRecTimer = setInterval(() => {
+      const s = Math.floor((Date.now() - medRecStart) / 1000);
+      document.getElementById('chat-rec-timer').textContent =
+        Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+    }, 500);
+  } catch(e) {
+    toast('Permissão de microfone negada.', 'err');
+  }
+}
+
+function _pararStreamAudio() {
+  clearInterval(medRecTimer);
+  document.getElementById('chat-rec-bar').style.display = 'none';
+  document.getElementById('chat-input-bar').style.display = 'flex';
+  if (medRecStream) { medRecStream.getTracks().forEach(t => t.stop()); medRecStream = null; }
+}
+
+function pararEnviarAudio() {
+  if (!medRecorder) return;
+  if (medRecorder.state !== 'inactive') medRecorder.stop(); // dispara onstop -> enviarAudioGravado
+  _pararStreamAudio();
+}
+
+function cancelarGravacaoAudio() {
+  if (medRecorder && medRecorder.state !== 'inactive') {
+    medRecorder.onstop = null;
+    medRecorder.stop();
+  }
+  medRecorder = null;
+  medRecChunks = [];
+  _pararStreamAudio();
+}
+
+function enviarAudioGravado() {
+  const dur = Math.round((Date.now() - medRecStart) / 1000);
+  const blob = new Blob(medRecChunks, { type: (medRecorder && medRecorder.mimeType) || 'audio/webm' });
+  medRecorder = null; medRecChunks = [];
+  if (!blob.size || !chatDest) return;
+
+  const key = chatKey(medCRM, chatDest);
+  const uid = 'au_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  const ext = blob.type.includes('mp4') ? 'm4a' : 'webm';
+  const ref = storage.ref('chat_media/' + key + '/' + uid + '.' + ext);
+
+  toast('Enviando áudio…', 'info');
+  ref.put(blob).then(() => ref.getDownloadURL()).then(url => {
+    db.ref(`chats/${key}`).push({
+      tipo: 'audio',
+      url,
+      nomeArquivo: 'Áudio (' + dur + 's)',
+      de: medCRM,
+      lido: false,
+      ts: new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}),
+    });
+  }).catch(e => toast('Erro ao enviar áudio: ' + e.message, 'err'));
+}
+
+// ── Salvar arquivo recebido no Acervo de Arquivos do médico ──
+async function salvarChatNoAcervo(urlEnc, nome, tipo, btn) {
+  try {
+    const url = decodeURIComponent(urlEnc);
+    const uid = 'arq_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    const cat = tipo === 'imagem' ? 'exame' : (tipo === 'audio' ? 'outros' : 'outros');
+    await DB.set('acervo_med/' + medCRM + '/' + uid, {
+      uid, nome, nomeOriginal: nome, url,
+      categoria: cat, medCRM, origem: 'chat',
+      ts: new Date().toISOString(),
+    });
+    if (btn) { btn.textContent = '✅ Salvo em Arquivos'; btn.disabled = true; btn.style.opacity = '.7'; }
+    toast('✅ Salvo no seu acervo de arquivos!', 'ok');
+  } catch(e) {
+    toast('Erro ao salvar no acervo: ' + e.message, 'err');
+  }
+}
+
+// ── Cálculo de não lidas + badges ──
+function atualizarBadgesContatos() {
+  let total = 0;
+  Object.keys(MED_NAMES).filter(crm => crm !== medCRM).forEach(crm => {
+    const n = chatUnread[crm] || 0;
+    total += n;
+    const b = document.getElementById('badge-' + crm);
+    if (b) {
+      b.textContent = n > 9 ? '9+' : n;
+      b.style.display = n > 0 ? 'flex' : 'none';
+    }
+  });
+  const badge = document.getElementById('chat-badge');
+  if (badge) badge.style.display = total > 0 ? 'flex' : 'none';
+}
 
 function activateChat() {
   const btn = document.getElementById('chat-btn');
   if (btn) btn.style.display = 'flex';
 
-  // Escutar novas mensagens em todas as conversas para mostrar badge
+  carregarFotosMedicos();
+
+  // Escuta cada conversa para contar não lidas e notificar novas mensagens
   Object.keys(MED_NAMES).filter(crm => crm !== medCRM).forEach(crm => {
     const key = chatKey(medCRM, crm);
-    db.ref(`chats/${key}`).limitToLast(1).on('child_added', snap => {
-      const m = snap.val();
-      if (m && m.de !== medCRM && !chatOpen) {
-        const badge = document.getElementById('chat-badge');
-        if (badge) { badge.style.display = 'flex'; }
-        toast(`💬 Nova mensagem de ${(MED_NAMES[m.de]||m.de).split('(')[0].trim()}`, 'info');
+    db.ref(`chats/${key}`).on('value', snap => {
+      const msgs = snap.val() || {};
+      const naoLidas = Object.values(msgs).filter(m => m.de !== medCRM && !m.lido).length;
+      const anterior = chatUnread[crm] || 0;
+      chatUnread[crm] = naoLidas;
+
+      // Notifica apenas quando aumenta o nº de não lidas e o chat dessa pessoa não está aberto
+      const convAberta = chatOpen && chatDest === crm;
+      if (chatUnreadInit[crm] && naoLidas > anterior && !convAberta) {
+        toast(`💬 Nova mensagem de ${(MED_NAMES[crm]||crm).split('(')[0].trim()}`, 'info');
       }
+      chatUnreadInit[crm] = true;
+
+      atualizarBadgesContatos();
     });
   });
 }
+
+// Mantidas por compatibilidade
+function saveChatLocal() {}
+function loadChatLocal() {}
 </script>
 
 <!-- Firebase Realtime Database -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script>
 
 // ═══════════════════════════ MODO NOTURNO ═══════════════════════════
@@ -2592,6 +2901,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const storage = firebase.storage();
 
 // ══ EMAILJS CONFIG ══
 const EMAILJS_SERVICE  = 'service_m597538';
@@ -2624,16 +2934,14 @@ async function enviarEmail(para, nomeDestinatario, assunto, senha, loginId, tipo
 }
 
 // ══════════════════════════════════════════════════════
-// CAMADA DE DADOS — Firebase (primário) + localStorage (cache/fallback)
+// CAMADA DE DADOS — Firebase (primário)
 // ══════════════════════════════════════════════════════
 const DB = {
-  // Salva no Firebase E no localStorage
+  // Salva no Firebase
   async set(path, data) {
     try {
       await db.ref(path).set(data);
     } catch(e) { console.warn('Firebase write error:', e); }
-    // Cache local sempre
-    try { localStorage.setItem('fb_' + path.replace(/\//g,'_'), JSON.stringify(data)); } catch(e) {}
   },
 
   // Push (lista) no Firebase E atualiza cache
@@ -2643,12 +2951,6 @@ const DB = {
       const ref = await db.ref(path).push(data);
       key = ref.key;
     } catch(e) { console.warn('Firebase push error:', e); }
-    // Cache local: append ao array existente
-    try {
-      const arr = JSON.parse(localStorage.getItem('fb_' + path.replace(/\//g,'_')) || '[]');
-      arr.push({ _key: key, ...data });
-      localStorage.setItem('fb_' + path.replace(/\//g,'_'), JSON.stringify(arr));
-    } catch(e) {}
     return key;
   },
 
@@ -2657,23 +2959,16 @@ const DB = {
     try {
       const snap = await db.ref(path).once('value');
       const val = snap.val();
-      if (val !== null) {
-        try { localStorage.setItem('fb_' + path.replace(/\//g,'_'), JSON.stringify(val)); } catch(e) {}
-        return val;
-      }
+      if (val !== null) return val;
     } catch(e) { console.warn('Firebase read error:', e); }
-    // Fallback: cache local
-    try { return JSON.parse(localStorage.getItem('fb_' + path.replace(/\//g,'_')) || 'null'); } catch(e) { return null; }
+    return null;
   },
 
   // Escuta em tempo real
   listen(path, cb) {
     try {
       db.ref(path).on('value', snap => { cb(snap.val()); });
-    } catch(e) {
-      // Fallback: retorna cache local uma vez
-      try { cb(JSON.parse(localStorage.getItem('fb_' + path.replace(/\//g,'_')) || 'null')); } catch(e2) { cb(null); }
-    }
+    } catch(e) { cb(null); }
   },
 
   // Para de escutar
@@ -2943,6 +3238,7 @@ function _activateMedSession(u) {
   document.getElementById('growth-sexo').value = 'M';
   showPage('medicos', document.getElementById('tab-med'));
   showMedSub('perfil');
+  initAcervoListener();
   renderHistorico(); renderMedCal(); updateGrowthChart(); renderMedProfile(u); activateChat();
   configurarAbasAdmin(u);
   attachDraftListeners();
@@ -3098,10 +3394,6 @@ async function renderAdminPacientes(filtro) {
 
   // Buscar do Firebase
   let pacs = await DB.get('pacientes') || {};
-  // Fallback localStorage
-  if (!Object.keys(pacs).length) {
-    pacs = JSON.parse(localStorage.getItem('capikids_pacientes')||'{}');
-  }
 
   let lista = Object.entries(pacs);
   if (filtro) {
@@ -3290,9 +3582,7 @@ async function criarContaPaciente() {
 
   try {
     await DB.set('pacientes/' + novoId, novoPac);
-    const pl = JSON.parse(localStorage.getItem('capikids_pacientes')||'{}');
-    pl[novoId] = novoPac;
-    localStorage.setItem('capikids_pacientes', JSON.stringify(pl));
+
 
     // Envia e-mail de boas-vindas
     const nomeResp = respNome.split(' ').slice(0,2).join(' ');
@@ -3520,8 +3810,8 @@ async function renderMeusPacientes(filtro) {
     p && p.medicosVinculados && p.medicosVinculados[medCRM] === 'ativo'
   );
 
-  // Também pega do localStorage (consultas antigas)
-  const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
+  // Buscar nomes de pacientes do Firebase (consultas associadas)
+  const arr = window._pacientesCache || [];
   const mapa = {};
   arr.filter(c => !c.medCRM || c.medCRM === medCRM).forEach(c => {
     if (!c.nome) return;
@@ -3581,8 +3871,18 @@ async function renderMeusPacientes(filtro) {
   }).join('');
 }
 
-function abrirPacDet(nome) {
-  const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
+async function abrirPacDet(nome) {
+  let arr = window._pacientesCache || [];
+  if (!arr.length) {
+    try {
+      const snap = await db.ref('consultas').once('value');
+      const val = snap.val() || {};
+      Object.values(val).forEach(pacObj => {
+        if (typeof pacObj === 'object') Object.values(pacObj).forEach(x => arr.push(x));
+      });
+      window._pacientesCache = arr;
+    } catch(e) {}
+  }
   const hist = arr.filter(c=>c.nome===nome).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
   if (!hist.length) return;
   const ult = hist[0];
@@ -3669,10 +3969,20 @@ function renderRetornoPacientes() {
   cancelarRetorno(true);
 }
 
-function buscaRetorno(q) {
+async function buscaRetorno(q) {
   const res = document.getElementById('ret-busca-resultado');
   if (!q || q.length < 2) { res.style.display = 'none'; return; }
-  const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
+  let arr = window._pacientesCache || [];
+  if (!arr.length) {
+    try {
+      const snap = await db.ref('consultas').once('value');
+      const val = snap.val() || {};
+      Object.values(val).forEach(pacObj => {
+        if (typeof pacObj === 'object') Object.values(pacObj).forEach(x => arr.push(x));
+      });
+      window._pacientesCache = arr;
+    } catch(e) {}
+  }
   // Pacientes únicos com histórico
   const mapa = {};
   arr.forEach(c => {
@@ -3696,8 +4006,19 @@ function buscaRetorno(q) {
     }).join('') + '</div>';
 }
 
-function selecionarRetorno(nome) {
-  const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
+async function selecionarRetorno(nome) {
+  // Buscar histórico do Firebase
+  let arr = window._pacientesCache || [];
+  if (!arr.length) {
+    try {
+      const snap = await db.ref('consultas').once('value');
+      const val = snap.val() || {};
+      Object.values(val).forEach(pacObj => {
+        if (typeof pacObj === 'object') Object.values(pacObj).forEach(c => arr.push(c));
+      });
+      window._pacientesCache = arr;
+    } catch(e) {}
+  }
   const hist = arr.filter(c => c.nome === nome).sort((a,b) => new Date(b.timestamp)-new Date(a.timestamp));
   if (!hist.length) return;
   const ult = hist[0];
@@ -3852,10 +4173,11 @@ async function salvarRetorno() {
     cids: '[]', prescricao: '[]', alarmes: '[]',
   };
 
-  // Salvar no localStorage como consulta normal (aparece no histórico)
-  const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
-  arr.push(dados);
-  localStorage.setItem('capikids_consultas', JSON.stringify(arr));
+  // Salvar retorno no Firebase (e invalidar cache in-memory)
+  if (dados.pacId) {
+    await DB.push('consultas/' + dados.pacId, dados);
+    window._pacientesCache = null;
+  }
 
   // Enviar ao Sheets
   if (SHEETS_URL && SHEETS_URL !== 'COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT') {
@@ -3879,7 +4201,7 @@ function showPacSub(n) {
   });
   currentPacSub = n;
   if (n===1) initGrowthChartPac();
-  if (n===3) renderDocsPacResponsavel();
+  if (n===3) { renderDocsPacResponsavel(); renderArqPac(); }
   if (n==='med') renderPacMedicos();
   if (n===4) renderCapivara();
 }
@@ -3936,24 +4258,21 @@ async function renderCapivaraInterno() {
     if (fbData) mine = Object.values(fbData);
   }
 
-  // 2. Fallback: busca por nome no localStorage
-  if (!mine.length) {
-    const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
-    const term = pacName.toLowerCase().trim();
-
-    // Match direto pelo nome
-    mine = arr.filter(c => c.nome && c.nome.toLowerCase().includes(term));
-
-    // Se não achou, tenta por palavras (ex: "Juliano César" → "juliano")
-    if (!mine.length) {
+  // 2. Se não encontrou, busca por nome em todas as consultas
+  if (!mine.length && pacName) {
+    try {
+      const snap = await db.ref('consultas').once('value');
+      const val = snap.val() || {};
+      const term = pacName.toLowerCase().trim();
       const palavras = term.split(/\s+/).filter(p => p.length >= 3);
-      mine = arr.filter(c => c.nome && palavras.some(p => c.nome.toLowerCase().includes(p)));
-    }
-
-    // Se ainda não achou e tem pacId, filtra por pacId
-    if (!mine.length && pacId) {
-      mine = arr.filter(c => c.pacId === pacId);
-    }
+      Object.values(val).forEach(pacObj => {
+        if (typeof pacObj === 'object') Object.values(pacObj).forEach(c => {
+          if (c.nome && (c.nome.toLowerCase().includes(term) ||
+              palavras.some(p => c.nome.toLowerCase().includes(p)) ||
+              (pacId && c.pacId === pacId))) mine.push(c);
+        });
+      });
+    } catch(e) {}
   }
 
   mine.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -4929,11 +5248,19 @@ function updateGrowthChart(){
 function var_r(c){return c==='green'?'#178A4A':c==='amber'?'#C78A14':'#C7362F';}
 
 // Curva paciente (histórico)
-function initGrowthChartPac(){
+async function initGrowthChartPac(){
   const canvas=document.getElementById('growthChartPac');
   if(!canvas||growthChartPac) return;
-  const consultas=JSON.parse(localStorage.getItem('capikids_consultas')||'[]')
-    .filter(c=>c.nome&&pacName&&c.nome.toLowerCase().includes(pacName.replace(/[A-Z]/g,'').toLowerCase().trim()));
+  // Buscar consultas do Firebase (ou cache)
+  let _allC = window._pacientesCache || [];
+  if (!_allC.length && pacId) {
+    try {
+      const _snap = await db.ref('consultas/' + pacId).once('value');
+      const _val = _snap.val() || {};
+      _allC = Object.values(_val);
+    } catch(e) {}
+  }
+  const consultas = _allC.filter(c=>c.nome&&pacName&&c.nome.toLowerCase().includes((pacName||'').toLowerCase().trim()));
 
   const labels=WHO_M.labels;
   const ref=WHO_M.M;
@@ -5267,17 +5594,10 @@ async function renderMedProfile(crm) {
   setT('med-edit-name-label', p.nome);
   setT('med-edit-crm-label',  p.crm);
 
-  // Carregar dados do Firebase (com fallback no localStorage)
+  // Carregar dados do Firebase
   let saved = await DB.get('medicos/' + crm);
   if (!saved) {
-    // Tentar migrar dados existentes no localStorage para o Firebase
-    const local = JSON.parse(localStorage.getItem('capikids_med_profile_'+crm)||'{}');
-    if (Object.keys(local).length) {
-      saved = { crm, nome: p.nome, especialidade: p.esp, ...local };
-      await DB.set('medicos/' + crm, saved);
-    } else {
-      saved = {};
-    }
+    saved = {};
   }
 
   const tel   = saved.tel   || '';
@@ -5329,8 +5649,6 @@ async function saveMedProfileAndClose() {
   };
 
   await DB.set('medicos/' + medCRM, atualizado);
-  // Cache local
-  localStorage.setItem('capikids_med_profile_'+medCRM, JSON.stringify(atualizado));
 
   updateViewSpans(tel, email, addr);
   toggleMedEdit(false);
@@ -5363,17 +5681,30 @@ async function loadMedPhoto(input) {
     const p = MED_PROFILES[medCRM] || {};
     atual = { ...atual, crm: medCRM, nome: p.nome || '', photo: src, atualizadoEm: new Date().toISOString() };
     await DB.set('medicos/' + medCRM, atual);
-    localStorage.setItem('capikids_med_profile_'+medCRM, JSON.stringify(atual));
     toast('Foto salva na nuvem! ✅', 'ok');
   };
   reader.readAsDataURL(file);
 }
 
 // ═══════════════════════════ BUSCA PACIENTE ═══════════════════════════
-function buscaPaciente(q) {
+async function buscaPaciente(q) {
   const res = document.getElementById('busca-resultado');
   if (!q || q.length < 2) { res.style.display='none'; return; }
-  const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
+
+  // Buscar nomes de pacientes no Firebase (cache em memória para a sessão)
+  if (!window._pacientesCache) {
+    try {
+      const snap = await db.ref('consultas').once('value');
+      const val = snap.val() || {};
+      const arr = [];
+      Object.values(val).forEach(pacObj => {
+        if (typeof pacObj === 'object') Object.values(pacObj).forEach(c => arr.push(c));
+      });
+      window._pacientesCache = arr;
+    } catch(e) { window._pacientesCache = []; }
+  }
+
+  const arr = window._pacientesCache;
   const nomes = [...new Set(arr.filter(c=>c.nome&&c.nome.toLowerCase().includes(q.toLowerCase())).map(c=>c.nome))].slice(0,6);
   if (!nomes.length) { res.style.display='none'; return; }
   res.style.display='block';
@@ -5383,8 +5714,19 @@ function buscaPaciente(q) {
       👦 ${n}</button>`).join('')+'</div>';
 }
 
-function preencherPacienteExistente(nome) {
-  const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
+async function preencherPacienteExistente(nome) {
+  // Usar cache in-memory (preenchido por buscaPaciente) ou buscar do Firebase
+  let arr = window._pacientesCache || [];
+  if (!arr.length) {
+    try {
+      const snap = await db.ref('consultas').once('value');
+      const val = snap.val() || {};
+      Object.values(val).forEach(pacObj => {
+        if (typeof pacObj === 'object') Object.values(pacObj).forEach(c => arr.push(c));
+      });
+      window._pacientesCache = arr;
+    } catch(e) {}
+  }
   const historico = arr.filter(c=>c.nome===nome).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
   if (!historico.length) return;
   const ult = historico[0];
@@ -5475,12 +5817,6 @@ async function buscarPacienteCadastrado(nome, dnasc) {
         return { id, ...p };
     }
   } catch(e) {}
-  // Fallback localStorage
-  const pacs = JSON.parse(localStorage.getItem('capikids_pacientes')||'{}');
-  for (const [id, p] of Object.entries(pacs)) {
-    if (normNome(p.nome) === normNome(nome) && (!dnasc || p.dnasc === dnasc))
-      return { id, ...p };
-  }
   return null;
 }
 
@@ -5650,19 +5986,13 @@ async function salvarProntuario(){
       criadoEm:new Date().toISOString(),
     };
     await DB.set(pacPath, novoPac);
-    // cache local
-    const pl = JSON.parse(localStorage.getItem('capikids_pacientes')||'{}');
-    pl[dados.pacId] = novoPac;
-    localStorage.setItem('capikids_pacientes', JSON.stringify(pl));
   } else {
     senha = pacExistente.senha || senhaInicial(dados.pacId, dados.dnasc);
   }
 
-  // 2. Salvar consulta no Firebase + localStorage
+  // 2. Salvar consulta no Firebase (e invalidar cache in-memory)
   await DB.push('consultas/' + dados.pacId, dados);
-  const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
-  arr.push(dados);
-  localStorage.setItem('capikids_consultas', JSON.stringify(arr));
+  window._pacientesCache = null;
 
   // 3. Backup no Sheets
   if (SHEETS_URL && SHEETS_URL !== 'COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT') {
@@ -5737,8 +6067,7 @@ async function renderHistorico(){
       Object.values(pacConsultas).forEach(c => todas.push(c));
     });
   } catch(e) {
-    // Fallback localStorage
-    todas = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
+    console.warn('Erro ao buscar histórico:', e);
   }
 
   // Filtrar pelo médico logado
@@ -5765,7 +6094,7 @@ async function renderHistorico(){
 }
 
 function openPront(idx, source){
-  const arr = window._historicoArr || JSON.parse(localStorage.getItem('capikids_consultas')||'[]').slice().reverse();
+  const arr = window._historicoArr || [];
   const c=arr[idx];if(!c)return;
   const cids=tryParse(c.cids,[]);
   const rxs=tryParse(c.prescricao,[]);
@@ -5847,34 +6176,294 @@ function prevMonth(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderMedC
 function nextMonth(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderMedCal();}
 
 // ═══════════════════════════ ARQUIVOS MÉDICO ═══════════════════════════
-function renderArquivosMed(){
-  const arqs=JSON.parse(localStorage.getItem('capikids_arquivos')||'[]');
-  const el=document.getElementById('arquivo-list');
-  if(!arqs.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">Nenhum arquivo publicado.</div>';return;}
-  el.innerHTML=arqs.map((a,i)=>`
-    <div class="file-card" style="margin-bottom:8px;cursor:default">
-      <div class="file-icon" style="background:#EAF2FF">📄</div>
-      <div style="flex:1"><div class="file-name">${a.desc}</div><div class="file-sub">${fmtDate(a.ts)}</div></div>
-      <button class="cid-del" onclick="removeArquivo(${i})">✕</button>
-    </div>`).join('');
+// ═══════════════════════════ ACERVO DE ARQUIVOS DO MÉDICO ═══════════════════════════
+
+// Emojis e labels por categoria
+const ARQ_CAT = {
+  orientacao: { icon: '📋', label: 'Orientação', bg: '#EAF2FF' },
+  receita:    { icon: '💊', label: 'Receita',    bg: '#E8F7EF' },
+  prontuario: { icon: '🗂️', label: 'Prontuário', bg: '#FFF5DF' },
+  exame:      { icon: '🔬', label: 'Exame',      bg: '#F3EEFF' },
+  vacina:     { icon: '💉', label: 'Vacina',     bg: '#E0F7F5' },
+  outros:     { icon: '📎', label: 'Outros',     bg: '#F5F5F5' },
+};
+
+let _acervoFiltro = 'todos';
+let _acervoCache = [];
+
+// Inicializa listener em tempo real do acervo do médico
+function initAcervoListener() {
+  if (!medCRM) return;
+  db.ref('acervo_med/' + medCRM).on('value', snap => {
+    const val = snap.val() || {};
+    _acervoCache = Object.entries(val).map(([uid, a]) => ({ uid, ...a }))
+      .sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    renderAcervo();
+  });
 }
 
-function addArquivo(){
-  const desc=document.getElementById('new-file-desc').value.trim();
-  if(!desc){toast('Descreva o arquivo antes de publicar.','err');return;}
-  const arqs=JSON.parse(localStorage.getItem('capikids_arquivos')||'[]');
-  desc.split('\n').filter(Boolean).forEach(d=>arqs.push({desc:d.trim(),ts:new Date().toISOString(),medCRM}));
-  localStorage.setItem('capikids_arquivos',JSON.stringify(arqs));
-  document.getElementById('new-file-desc').value='';
-  renderArquivosMed();
-  toast('Arquivo publicado!','ok');
+function renderAcervo() {
+  const el = document.getElementById('acervo-lista');
+  if (!el) return;
+  const lista = _acervoFiltro === 'todos'
+    ? _acervoCache
+    : _acervoCache.filter(a => a.categoria === _acervoFiltro);
+
+  if (!lista.length) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:13px;text-align:center;padding:32px">
+      ${_acervoFiltro === 'todos' ? '📭 Nenhum arquivo no acervo. Clique em <b>Adicionar arquivo</b> para começar.' : '📭 Nenhum arquivo nesta categoria.'}
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = lista.map(a => {
+    const cat = ARQ_CAT[a.categoria] || ARQ_CAT.outros;
+    const tamanho = a.tamanho ? formatBytes(a.tamanho) : '';
+    return `<div style="background:white;border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="width:44px;height:44px;border-radius:10px;background:${cat.bg};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${cat.icon}</div>
+      <div style="flex:1;min-width:160px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--navy)">${a.nome || a.nomeOriginal || '—'}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${cat.label} · ${fmtDate(a.ts)}${tamanho ? ' · ' + tamanho : ''}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <a href="${a.url}" target="_blank" style="background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:800;color:var(--navy);text-decoration:none">⬇️ Baixar</a>
+        <button onclick="abrirModalEnviar('${a.uid}')" style="background:#EAF2FF;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:800;color:var(--blue);cursor:pointer;font-family:'DM Sans',sans-serif">📤 Encaminhar</button>
+        <button onclick="excluirArquivoAcervo('${a.uid}')" style="background:#FFF0F0;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:800;color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">🗑 Excluir</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function removeArquivo(i){
-  const arqs=JSON.parse(localStorage.getItem('capikids_arquivos')||'[]');
-  arqs.splice(i,1);localStorage.setItem('capikids_arquivos',JSON.stringify(arqs));
-  renderArquivosMed();
+function filtrarAcervo(cat) {
+  _acervoFiltro = cat;
+  ['todos','orientacao','receita','prontuario','exame','vacina','outros'].forEach(k => {
+    const btn = document.getElementById('arq-filtro-' + k);
+    if (btn) btn.classList.toggle('active', k === cat);
+  });
+  renderAcervo();
 }
+
+function formatBytes(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// Upload de arquivo para o Firebase Storage
+let _uploadPendente = null; // { file, url, nomeOriginal, tamanho }
+
+async function uploadArquivoAcervo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  const MAX = 50 * 1024 * 1024;
+  if (file.size > MAX) {
+    toast('Arquivo excede o limite de 50 MB.', 'err');
+    return;
+  }
+
+  const wrap = document.getElementById('arq-upload-progress-wrap');
+  const bar  = document.getElementById('arq-upload-bar');
+  const pct  = document.getElementById('arq-upload-pct');
+  const nom  = document.getElementById('arq-upload-nome-prog');
+  wrap.style.display = 'block';
+  nom.textContent = file.name;
+  bar.style.width = '0%';
+  pct.textContent = '0%';
+
+  try {
+    const uid = 'arq_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    const ref = storage.ref('acervo_med/' + medCRM + '/' + uid + '_' + file.name);
+    const task = ref.put(file);
+
+    task.on('state_changed',
+      snap => {
+        const p = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+        bar.style.width = p + '%';
+        pct.textContent = p + '%';
+      },
+      err => { wrap.style.display='none'; toast('Erro no upload: ' + err.message, 'err'); },
+      async () => {
+        const url = await ref.getDownloadURL();
+        wrap.style.display = 'none';
+        _uploadPendente = { uid, url, nomeOriginal: file.name, tamanho: file.size };
+        // Abre modal para definir nome e categoria
+        document.getElementById('arq-meta-uid').value = uid;
+        document.getElementById('arq-meta-nome').value = file.name.replace(/\.[^.]+$/, '');
+        document.getElementById('arq-meta-cat').value = 'outros';
+        document.getElementById('modal-arq-meta').style.display = 'flex';
+        setTimeout(() => document.getElementById('arq-meta-nome').select(), 100);
+      }
+    );
+  } catch(e) {
+    wrap.style.display = 'none';
+    toast('Erro ao iniciar upload: ' + e.message, 'err');
+  }
+}
+
+async function salvarMetaArquivo() {
+  if (!_uploadPendente) return;
+  const nome = document.getElementById('arq-meta-nome').value.trim();
+  const cat  = document.getElementById('arq-meta-cat').value;
+  if (!nome) { toast('Informe um nome para o arquivo.', 'err'); return; }
+
+  const meta = {
+    uid:         _uploadPendente.uid,
+    nome,
+    nomeOriginal: _uploadPendente.nomeOriginal,
+    url:         _uploadPendente.url,
+    tamanho:     _uploadPendente.tamanho,
+    categoria:   cat,
+    medCRM,
+    ts:          new Date().toISOString(),
+  };
+
+  try {
+    await DB.set('acervo_med/' + medCRM + '/' + meta.uid, meta);
+    document.getElementById('modal-arq-meta').style.display = 'none';
+    _uploadPendente = null;
+    toast('✅ Arquivo salvo no acervo!', 'ok');
+  } catch(e) {
+    toast('Erro ao salvar metadados: ' + e.message, 'err');
+  }
+}
+
+async function excluirArquivoAcervo(uid) {
+  if (!confirm('Excluir este arquivo do acervo? Esta ação não pode ser desfeita.')) return;
+  try {
+    await DB.set('acervo_med/' + medCRM + '/' + uid, null); // remove do DB
+    // Tenta remover do Storage (ignora erro se já não existe)
+    const arq = _acervoCache.find(a => a.uid === uid);
+    if (arq && arq.nomeOriginal) {
+      try { await storage.ref('acervo_med/' + medCRM + '/' + uid + '_' + arq.nomeOriginal).delete(); } catch(e){}
+    }
+    toast('Arquivo excluído.', 'ok');
+  } catch(e) {
+    toast('Erro ao excluir: ' + e.message, 'err');
+  }
+}
+
+// Modal de envio para paciente
+async function abrirModalEnviar(uid) {
+  document.getElementById('arq-enviar-uid').value = uid;
+  const arq = _acervoCache.find(a => a.uid === uid);
+  document.getElementById('modal-arq-enviar-nome').textContent = arq ? '📎 ' + arq.nome : '';
+  document.getElementById('arq-enviar-msg').value = '';
+  document.getElementById('modal-arq-enviar').style.display = 'flex';
+
+  // Carregar lista de pacientes vinculados
+  const listaEl = document.getElementById('modal-arq-pacs-lista');
+  listaEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px;text-align:center">⏳ Carregando…</div>';
+  try {
+    const solData = await DB.get('medicos/' + medCRM + '/solicitacoesPaciente') || {};
+    const vinculados = Object.entries(solData).filter(([,v]) => v && v.status === 'ativo');
+    if (!vinculados.length) {
+      listaEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px;text-align:center">Nenhum paciente vinculado ainda.</div>';
+      return;
+    }
+    const pacs = await Promise.all(vinculados.map(([pid]) => DB.get('pacientes/' + pid).then(p => ({ pid, ...(p||{}) }))));
+    listaEl.innerHTML = pacs.map(p => `
+      <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--soft)">
+        <input type="checkbox" value="${p.pid}" style="width:16px;height:16px;accent-color:var(--blue)">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--navy)">${p.nome || p.pid}</div>
+          <div style="font-size:11px;color:var(--muted)">${p.pid}</div>
+        </div>
+      </label>`).join('');
+  } catch(e) {
+    listaEl.innerHTML = '<div style="color:var(--red);font-size:13px;padding:12px">Erro ao carregar pacientes: ' + e.message + '</div>';
+  }
+}
+
+async function confirmarEnvioArquivo() {
+  const uid = document.getElementById('arq-enviar-uid').value;
+  const msg = document.getElementById('arq-enviar-msg').value.trim();
+  const arq = _acervoCache.find(a => a.uid === uid);
+  if (!arq) return;
+
+  const checkboxes = document.querySelectorAll('#modal-arq-pacs-lista input[type=checkbox]:checked');
+  if (!checkboxes.length) { toast('Selecione ao menos um paciente.', 'err'); return; }
+
+  const registro = {
+    uid, nome: arq.nome, nomeOriginal: arq.nomeOriginal,
+    url: arq.url, tamanho: arq.tamanho, categoria: arq.categoria,
+    medCRM, msg, ts: new Date().toISOString(),
+  };
+
+  try {
+    await Promise.all([...checkboxes].map(cb =>
+      DB.set('pacientes/' + cb.value + '/arquivos_recebidos/' + uid, registro)
+    ));
+    document.getElementById('modal-arq-enviar').style.display = 'none';
+    toast('✅ Arquivo encaminhado para ' + checkboxes.length + ' paciente(s)!', 'ok');
+  } catch(e) {
+    toast('Erro ao encaminhar: ' + e.message, 'err');
+  }
+}
+
+// ── Área do Paciente: arquivos recebidos ──
+let _arqPacFiltro = 'todos';
+let _arqPacCache  = [];
+
+async function renderArqPac() {
+  if (!pacId) return;
+  const el = document.getElementById('pac-arq-lista');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px">⏳ Carregando…</div>';
+  try {
+    const data = await DB.get('pacientes/' + pacId + '/arquivos_recebidos') || {};
+    _arqPacCache = Object.values(data).sort((a,b) => new Date(b.ts)-new Date(a.ts));
+    const cnt = document.getElementById('pac-arq-count');
+    if (cnt) cnt.textContent = _arqPacCache.length + ' arquivo' + (_arqPacCache.length !== 1 ? 's' : '');
+    _renderArqPacLista();
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red);font-size:13px;padding:12px">Erro ao carregar: ' + e.message + '</div>';
+  }
+}
+
+function _renderArqPacLista() {
+  const el = document.getElementById('pac-arq-lista');
+  if (!el) return;
+  const lista = _arqPacFiltro === 'todos'
+    ? _arqPacCache
+    : _arqPacCache.filter(a => a.categoria === _arqPacFiltro);
+
+  if (!lista.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:32px">' +
+      (_arqPacFiltro === 'todos' ? '📭 Nenhum arquivo recebido ainda. Seu médico poderá enviar receitas, orientações e exames por aqui.' : '📭 Nenhum arquivo nesta categoria.') +
+      '</div>';
+    return;
+  }
+
+  el.innerHTML = lista.map(a => {
+    const cat = ARQ_CAT[a.categoria] || ARQ_CAT.outros;
+    return `<div style="background:white;border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="width:44px;height:44px;border-radius:10px;background:${cat.bg};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${cat.icon}</div>
+      <div style="flex:1;min-width:160px">
+        <div style="font-size:13.5px;font-weight:800;color:var(--navy)">${a.nome || a.nomeOriginal || '—'}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${cat.label} · ${fmtDate(a.ts)}${a.medCRM ? ' · Dr(a). CRM-SP ' + a.medCRM : ''}</div>
+        ${a.msg ? `<div style="margin-top:6px;font-size:12px;color:var(--ink);background:var(--soft);border-radius:8px;padding:6px 10px">"${a.msg}"</div>` : ''}
+      </div>
+      <a href="${a.url}" target="_blank" download style="background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:none;border-radius:10px;padding:8px 16px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;white-space:nowrap">⬇️ Baixar</a>
+    </div>`;
+  }).join('');
+}
+
+function filtrarArqPac(cat) {
+  _arqPacFiltro = cat;
+  ['todos','orientacao','receita','prontuario','exame','vacina','outros'].forEach(k => {
+    const btn = document.getElementById('pac-arq-filtro-' + k);
+    if (btn) btn.classList.toggle('active', k === cat);
+  });
+  _renderArqPacLista();
+}
+
+// Funções antigas mantidas para compatibilidade (não fazem nada relevante)
+function renderArquivosMed() { if (medCRM) initAcervoListener(); }
+function addArquivo() {}
+function removeArquivo() {}
 
 // ═══════════════════════════ DADOS PACIENTE ═══════════════════════════
 async function loadPacData(){
@@ -5888,14 +6477,18 @@ async function loadPacData(){
     }
   }
 
-  // 2. Fallback: busca por nome no localStorage (logins legados)
-  if (!mine.length) {
-    const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
-    const term = pacName.toLowerCase().trim();
-    mine = arr.filter(c => c.nome && (
-      c.nome.toLowerCase().includes(term) ||
-      (pacId && c.pacId === pacId)
-    ));
+  // 2. Se não encontrou pelo ID, tentar busca em todas as consultas pelo nome
+  if (!mine.length && pacName) {
+    try {
+      const snap = await db.ref('consultas').once('value');
+      const val = snap.val() || {};
+      const term = pacName.toLowerCase().trim();
+      Object.values(val).forEach(pacObj => {
+        if (typeof pacObj === 'object') Object.values(pacObj).forEach(c => {
+          if (c.nome && c.nome.toLowerCase().includes(term)) mine.push(c);
+        });
+      });
+    } catch(e) {}
   }
 
   mine.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
@@ -5993,12 +6586,7 @@ async function loadPacData(){
     renderCadernetaReadOnly(last, last.dnasc);
   }
 
-  // arquivos extras
-  const arqs=JSON.parse(localStorage.getItem('capikids_arquivos')||'[]');
-  if(arqs.length){
-    document.getElementById('pac-arq-extra').innerHTML='<div class="section-label" style="margin-top:12px">Publicados pela equipe</div><div class="file-grid">'+
-      arqs.map(a=>`<div class="file-card"><div class="file-icon" style="background:#EAF2FF">📄</div><div><div class="file-name">${a.desc}</div><div class="file-sub">${fmtDate(a.ts)}</div></div></div>`).join('')+'</div>';
-  }
+  // arquivos recebidos são carregados via renderArqPac() na aba de Arquivos
 
   // agendamentos
   const agends=JSON.parse(localStorage.getItem('capikids_agendamentos')||'[]').filter(a=>a.pac===pacName);
@@ -6527,10 +7115,6 @@ async function salvarCadastroPac() {
 
   try {
     await DB.set('pacientes/' + id, novoPac);
-    // Cache local
-    const pl = JSON.parse(localStorage.getItem('capikids_pacientes')||'{}');
-    pl[id] = novoPac;
-    localStorage.setItem('capikids_pacientes', JSON.stringify(pl));
 
     // Envia e-mail de boas-vindas com senha via EmailJS
     const nomeResp = respNome.split(' ').slice(0,2).join(' ');
@@ -7174,11 +7758,20 @@ async function renderAtividadesMed() {
   const periodoEl = document.getElementById('med-atv-periodo');
   if (periodoEl) periodoEl.textContent = meses[mes] + ' de ' + ano;
 
-  // Buscar consultas do Firebase
-  const allSnap = await DB.get('consultas_med/' + medCRM) || {};
-  const retSnap = await DB.get('retornos_med/' + medCRM) || {};
-  const consultaArr = Object.values(allSnap);
-  const retornoArr  = Object.values(retSnap);
+  // Buscar todas as consultas do Firebase (todas entradas = consultas + retornos por tipo)
+  let todasConsultas = [], todosRetornos = [];
+  try {
+    const snap = await db.ref('consultas').once('value');
+    const val = snap.val() || {};
+    Object.values(val).forEach(pacObj => {
+      if (typeof pacObj === 'object') Object.values(pacObj).forEach(c => {
+        if (!c.medCRM || c.medCRM === medCRM) {
+          if (c.tipo === 'retorno') todosRetornos.push(c);
+          else todasConsultas.push(c);
+        }
+      });
+    });
+  } catch(e) { console.warn('renderAtividadesMed Firebase error:', e); }
 
   // Filtrar pelo mês atual
   const doMes = arr => arr.filter(c => {
@@ -7186,16 +7779,8 @@ async function renderAtividadesMed() {
     return d.getMonth() === mes && d.getFullYear() === ano;
   });
 
-  // Também incluir do localStorage
-  const local = JSON.parse(localStorage.getItem('capikids_consultas')||'[]')
-    .filter(c => (!c.medCRM || c.medCRM === medCRM));
-  const localRet = JSON.parse(localStorage.getItem('capikids_retornos')||'[]')
-    .filter(c => (!c.medCRM || c.medCRM === medCRM));
-
-  const todasConsultas = [...consultaArr, ...local];
-  const todosRetornos  = [...retornoArr,  ...localRet];
-  const consultasMes   = doMes(todasConsultas);
-  const retornosMes    = doMes(todosRetornos);
+  const consultasMes = doMes(todasConsultas);
+  const retornosMes  = doMes(todosRetornos);
 
   const pacientesUnicos = new Set(consultasMes.map(c => c.nome||c.pacId||'').filter(Boolean));
 
@@ -7257,8 +7842,21 @@ async function renderAtividadesDetalhadas() {
 
   const now = new Date();
   const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const local = JSON.parse(localStorage.getItem('capikids_consultas')||'[]').filter(c => (!c.medCRM || c.medCRM === medCRM));
-  const localRet = JSON.parse(localStorage.getItem('capikids_retornos')||'[]').filter(c => (!c.medCRM || c.medCRM === medCRM));
+
+  // Buscar do Firebase
+  let local = [], localRet = [];
+  try {
+    const snap = await db.ref('consultas').once('value');
+    const val = snap.val() || {};
+    Object.values(val).forEach(pacObj => {
+      if (typeof pacObj === 'object') Object.values(pacObj).forEach(c => {
+        if (!c.medCRM || c.medCRM === medCRM) {
+          if (c.tipo === 'retorno') localRet.push(c);
+          else local.push(c);
+        }
+      });
+    });
+  } catch(e) { console.warn('renderAtividadesDetalhadas error:', e); }
 
   // Últimos 6 meses
   const dados6m = [];
@@ -7373,6 +7971,8 @@ async function carregarCamposPagina() {
   setVal('pag-endereco-mapa',  dados.enderecoMapa|| '');
   setVal('pag-tel-pub',        dados.telPub      || '');
   setVal('pag-email-pub',      dados.emailPub    || '');
+  setVal('pag-link-externo',       dados.linkExterno      || '');
+  setVal('pag-link-externo-label', dados.linkExternoLabel || '');
 }
 
 async function salvarPaginaMedico() {
@@ -7387,6 +7987,8 @@ async function salvarPaginaMedico() {
     enderecoMapa: get('pag-endereco-mapa'),
     telPub:       get('pag-tel-pub'),
     emailPub:     get('pag-email-pub'),
+    linkExterno:      get('pag-link-externo'),
+    linkExternoLabel: get('pag-link-externo-label'),
     atualizadoEm: new Date().toISOString(),
   };
   await DB.set('medicos/' + medCRM + '/pagina', dados);
@@ -7410,6 +8012,9 @@ async function renderPaginaMedico() {
   const tel      = pagina.telPub  || medDados.tel   || '';
   const email    = pagina.emailPub|| medDados.email  || '';
   const addr     = pagina.enderecoMapa || medDados.addr || '';
+  const linkExt    = (pagina.linkExterno || '').trim();
+  const linkExtUrl = linkExt ? (/^https?:\/\//i.test(linkExt) ? linkExt : 'https://' + linkExt) : '';
+  const linkExtLbl = (pagina.linkExternoLabel || '').trim() || 'Agendar em outro site';
 
   // Agenda real: lê os próximos dias com horários cadastrados em capikids_agenda
   const agendaRaw = JSON.parse(localStorage.getItem('capikids_agenda')||'{}');
@@ -7545,6 +8150,15 @@ async function renderPaginaMedico() {
         <button disabled style="width:100%;background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:800;cursor:not-allowed;font-family:'DM Sans',sans-serif;opacity:.7">
           Solicitar consulta com ${nome.split(' ').slice(0,2).join(' ')}
         </button>
+        ${linkExtUrl ? `
+        <div style="display:flex;align-items:center;gap:8px;margin:12px 0 4px">
+          <div style="flex:1;height:1px;background:var(--line)"></div>
+          <span style="font-size:11px;color:var(--muted);font-weight:700">ou</span>
+          <div style="flex:1;height:1px;background:var(--line)"></div>
+        </div>
+        <a href="${linkExtUrl}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:white;color:var(--blue);border:2px solid var(--blue);border-radius:10px;padding:11px;font-size:13.5px;font-weight:800;text-decoration:none;box-sizing:border-box">
+          🔗 ${linkExtLbl} →
+        </a>` : ''}
         <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">⚠️ Preview — este botão funciona apenas na área do paciente</div>
       </div>
 
@@ -7573,6 +8187,9 @@ async function renderPreviewPaginaPaciente(crm) {
   const crmStr   = 'CRM-' + (medDados.uf||'SP') + ' ' + crm;
   const foto     = medDados.photo || '';
   const addr     = pagina.enderecoMapa || medDados.addr || '';
+  const linkExt    = (pagina.linkExterno || '').trim();
+  const linkExtUrl = linkExt ? (/^https?:\/\//i.test(linkExt) ? linkExt : 'https://' + linkExt) : '';
+  const linkExtLbl = (pagina.linkExternoLabel || '').trim() || 'Agendar em outro site';
   const mapUrl   = addr ? `https://maps.google.com/maps?q=${encodeURIComponent(addr)}&output=embed&z=16` : '';
   const agendaRaw = JSON.parse(localStorage.getItem('capikids_agenda')||'{}');
   const hojeStr  = new Date().toISOString().slice(0,10);
@@ -7646,6 +8263,15 @@ async function renderPreviewPaginaPaciente(crm) {
     <button onclick="solicitarConsultaMedico('${crm}','${nome}')" style="width:100%;background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">
       📋 Solicitar consulta com ${nome.split(' ').slice(0,2).join(' ')}
     </button>
+    ${linkExtUrl ? `
+    <div style="display:flex;align-items:center;gap:8px;margin:12px 0">
+      <div style="flex:1;height:1px;background:var(--line)"></div>
+      <span style="font-size:11px;color:var(--muted);font-weight:700">ou</span>
+      <div style="flex:1;height:1px;background:var(--line)"></div>
+    </div>
+    <a href="${linkExtUrl}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:white;color:var(--blue);border:2px solid var(--blue);border-radius:10px;padding:13px;font-size:14px;font-weight:800;text-decoration:none;box-sizing:border-box">
+      🔗 ${linkExtLbl} →
+    </a>` : ''}
     ${pagina.telPub||medDados.tel ? `<div style="margin-top:10px"><a href="https://wa.me/55${((pagina.telPub||medDados.tel||'').replace(/\D/g,''))}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:white;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:800;text-decoration:none">📱 WhatsApp</a></div>` : ''}
   </div>`;
 
