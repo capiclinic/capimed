@@ -2059,6 +2059,7 @@ button.export{background:var(--teal);color:white}
         <div id="pac-arq-extra"></div>
       </div>
     </div>
+  </div>
 
   <!-- ─── PSUB MED: MEU MÉDICO ─── -->
   <div id="psub-panel-med" style="display:none">
@@ -3871,10 +3872,32 @@ function showPacSub(n) {
 
 // ═══════════════════════════ CAPIVARA VIRTUAL ═══════════════════════════
 async function renderCapivara() {
-  // Garantir que o painel está visível
-  const painel = document.getElementById('psub-panel-4');
-  if (painel) painel.style.display = 'block';
+  // Garantir que o painel e o avatar SEMPRE aparecem, mesmo que algo abaixo falhe.
+  // Isso roda fora do try/catch para nunca depender de Firebase/dados.
+  const painel0    = document.getElementById('psub-panel-4');
+  const avatarWrap0= document.getElementById('capy-avatar-wrap');
+  const pontWrap0  = document.getElementById('capy-pontuacao-wrap');
+  const gifEl0     = document.getElementById('capy-gif');
+  if (painel0)     painel0.style.display = 'block';
+  if (avatarWrap0) avatarWrap0.style.display = 'inline-block';
+  if (pontWrap0)   pontWrap0.style.display   = 'inline-block';
+  if (gifEl0)      gifEl0.style.display = 'block';
 
+  try {
+    await renderCapivaraInterno();
+  } catch (e) {
+    console.warn('Erro ao carregar dados da Capi (avatar permanece visível):', e);
+    // Mesmo com erro, garante o estado "aguardando dados" visível
+    const semDadosErr = document.getElementById('capy-sem-dados');
+    const chipErr      = document.getElementById('capy-status-chip');
+    const fraseErr      = document.getElementById('capy-frase');
+    if (semDadosErr) semDadosErr.style.display = 'block';
+    if (chipErr) { chipErr.className='chip chip-blue'; chipErr.textContent='🦫 Aguardando dados'; }
+    if (fraseErr) fraseErr.textContent = '"Olá! Sou a Capi de '+(typeof pacName!=='undefined'?pacName:'')+'! Após a primeira consulta, vou mostrar sua saúde aqui. 🌟"';
+  }
+}
+
+async function renderCapivaraInterno() {
   const semDados  = document.getElementById('capy-sem-dados');
   const indWrap   = document.getElementById('capy-indicadores');
   const pendWrap  = document.getElementById('capy-pendencias-wrap');
