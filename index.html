@@ -34,6 +34,40 @@ body,body *{transition:background-color .25s,border-color .2s,color .2s}
 body.dark-mode .doc-storage-item,.dark-mode .file-card{background:#21262D}
 body.dark-mode .upload-zone{background:#21262D;border-color:#30363D}
 body.dark-mode .upload-zone:hover,.dark-mode .upload-zone.drag-over{background:#0D1117;border-color:#58A6FF}
+/* ── Correção: cartões/caixas com fundo claro fixo em inline style devem seguir o tema escuro ── */
+body.dark-mode [style*="background:white"],
+body.dark-mode [style*="background: white"],
+body.dark-mode [style*="background:#fff"],
+body.dark-mode [style*="background: #fff"],
+body.dark-mode [style*="background:#FFFFFF"],
+body.dark-mode [style*="background:#F0FFF7"],
+body.dark-mode [style*="background:#EAF2FF"],
+body.dark-mode [style*="background:#FFF5DF"],
+body.dark-mode [style*="background:#FDEEEE"],
+body.dark-mode [style*="background:#F3EEFF"],
+body.dark-mode [style*="background:#E0F7F5"],
+body.dark-mode [style*="background:#E8F7EF"],
+body.dark-mode [style*="background:rgba(180,230,200"],
+body.dark-mode [style*="background:#F4F7FC"],
+body.dark-mode [style*="background:linear-gradient(135deg,#F4F7FC"]{
+  background:#161B22!important;
+  color:#E6EDF3!important;
+  border-color:#30363D!important;
+}
+/* Garante que textos e rótulos dentro dessas caixas herdem cor clara, exceto onde a cor é semântica (chips, status) */
+body.dark-mode [style*="background:white"] *:not([style*="color:var(--blue)"]):not([style*="color:var(--green)"]):not([style*="color:var(--red)"]):not([style*="color:var(--amber)"]):not([style*="color:var(--purple)"]):not([style*="color:var(--teal)"]):not(.chip):not(button),
+body.dark-mode [style*="background:#F0FFF7"] *:not(button),
+body.dark-mode [style*="background:#EAF2FF"] *:not(button),
+body.dark-mode [style*="background:#FFF5DF"] *:not(button),
+body.dark-mode [style*="background:#FDEEEE"] *:not(button),
+body.dark-mode [style*="background:#F3EEFF"] *:not(button),
+body.dark-mode [style*="background:#E0F7F5"] *:not(button),
+body.dark-mode [style*="background:#E8F7EF"] *:not(button){
+  color:#E6EDF3!important;
+}
+/* Mantém legibilidade de textos coloridos (var(--navy), var(--muted) etc.) que já se adaptam via variável */
+body.dark-mode [style*="color:var(--navy)"]{color:var(--navy)!important}
+body.dark-mode [style*="color:var(--muted)"]{color:var(--muted)!important}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
 .hero{background:#ffffff;color:var(--ink);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 var(--line),0 2px 12px rgba(12,32,58,.06)}
@@ -1021,8 +1055,8 @@ button.export{background:var(--teal);color:white}
         <div class="panel-head"><div><h2>📏 Antropometria e Sinais Vitais</h2></div><span class="chip chip-teal">O — Objetivo</span></div>
         <div class="meta">
           <div class="field"><label>Peso (kg)</label><input id="f-peso" type="number" step=".1" placeholder="0.0" oninput="updateVitals();calcIMC();updateGrowthChart()"></div>
-          <div class="field"><label>Estatura (cm)</label><input id="f-alt" type="number" step=".1" placeholder="0.0" oninput="updateVitals();calcIMC()"></div>
-          <div class="field"><label>PC (cm)</label><input id="f-pc" type="number" step=".1" placeholder="Perímetro cefálico"></div>
+          <div class="field"><label>Estatura (cm)</label><input id="f-alt" type="number" step=".1" placeholder="0.0" oninput="updateVitals();calcIMC();updateGrowthChart()"></div>
+          <div class="field"><label>PC (cm)</label><input id="f-pc" type="number" step=".1" placeholder="Perímetro cefálico" oninput="updateGrowthChart()"></div>
           <div class="field"><label>IMC (kg/m²)</label><input id="f-imc" type="text" readonly placeholder="—"></div>
         </div>
         <div class="meta" style="margin-top:10px">
@@ -1038,24 +1072,33 @@ button.export{background:var(--teal);color:white}
 
         <!-- GRÁFICO CRESCIMENTO OMS -->
         <div class="growth-wrap">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-            <div><b style="font-size:13px">📊 Curva de Crescimento Pediátrico — OMS</b><div class="sub">Peso-para-idade · Comparação com percentis da OMS</div></div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <label style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Sexo:</label>
-              <select id="growth-sexo" onchange="updateGrowthChart()" style="border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:12px;font-family:'DM Sans',sans-serif;background:white">
-                <option value="M">Masculino</option>
-                <option value="F">Feminino</option>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div><b style="font-size:13px" id="growth-title">📊 Curva de Crescimento Pediátrico — OMS</b><div class="sub" id="growth-subtitle">Peso-para-Idade · Comparação com percentis da OMS</div></div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+              <select id="growth-tipo" onchange="updateGrowthChart()" style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:11px;font-family:'DM Sans',sans-serif;background:white">
+                <option value="WFA_PCT">Peso/Idade — Percentil</option>
+                <option value="WFA_Z">Peso/Idade — Escore Z</option>
+                <option value="HFA_PCT">Altura/Idade — Percentil</option>
+                <option value="HFA_Z">Altura/Idade — Escore Z</option>
+                <option value="BMI_Z">IMC/Idade — Escore Z</option>
+                <option value="HCA_PCT">PC/Idade — Percentil</option>
+                <option value="HCA_Z">PC/Idade — Escore Z</option>
+              </select>
+              <select id="growth-sexo" onchange="updateGrowthChart()" style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:11px;font-family:'DM Sans',sans-serif;background:white">
+                <option value="M">Meninos</option>
+                <option value="F">Meninas</option>
               </select>
             </div>
           </div>
-          <canvas id="growthChart" height="280"></canvas>
-          <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap">
-            <span style="font-size:11px;display:flex;align-items:center;gap:4px"><span style="width:18px;height:3px;background:#1F6FEB;display:inline-block;border-radius:2px"></span>P50 (mediana)</span>
-            <span style="font-size:11px;display:flex;align-items:center;gap:4px"><span style="width:18px;height:2px;background:#A3C0F7;display:inline-block;border-radius:2px;border-top:2px dashed #A3C0F7"></span>P3 / P97</span>
-            <span style="font-size:11px;display:flex;align-items:center;gap:4px"><span style="width:18px;height:2px;background:#FFA040;display:inline-block;border-radius:2px;border-top:2px dashed #FFA040"></span>P15 / P85</span>
-            <span style="font-size:11px;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#E54B4B;border:2px solid white;box-shadow:0 0 0 1px #E54B4B"></span>Paciente</span>
+          <canvas id="growthChart" height="260"></canvas>
+          <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap">
+            <span style="font-size:10.5px;display:flex;align-items:center;gap:4px"><span style="width:16px;height:3px;background:#1F6FEB;display:inline-block;border-radius:2px"></span><span id="growth-legend-mid">P50 (mediana)</span></span>
+            <span style="font-size:10.5px;display:flex;align-items:center;gap:4px"><span style="width:16px;height:2px;background:#A3C0F7;display:inline-block;border-top:2px dashed #A3C0F7"></span><span id="growth-legend-outer">P3 / P97</span></span>
+            <span style="font-size:10.5px;display:flex;align-items:center;gap:4px"><span style="width:16px;height:2px;background:#FFA040;display:inline-block;border-top:2px dashed #FFA040"></span><span id="growth-legend-inner">P15 / P85</span></span>
+            <span style="font-size:10.5px;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#E54B4B;border:2px solid white;box-shadow:0 0 0 1px #E54B4B"></span>Paciente</span>
           </div>
-          <div id="growth-result" style="margin-top:10px;font-size:12.5px;color:var(--muted)"></div>
+          <div id="growth-result" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+          <div id="growth-ref" style="margin-top:6px;font-size:10px;color:var(--muted);border-top:1px solid var(--line);padding-top:6px"></div>
         </div>
       </div>
 
@@ -1400,8 +1443,8 @@ button.export{background:var(--teal);color:white}
         </div>
         <div class="meta" style="margin-bottom:12px">
           <div class="field"><label>Peso (kg) *</label><input id="ret-peso" type="number" step=".1" placeholder="0.0" oninput="retCalcIMC();retUpdateGrowth()"></div>
-          <div class="field"><label>Estatura (cm) *</label><input id="ret-alt"  type="number" step=".1" placeholder="0.0" oninput="retCalcIMC()"></div>
-          <div class="field"><label>PC (cm)</label><input id="ret-pc"   type="number" step=".1" placeholder="Perímetro cefálico"></div>
+          <div class="field"><label>Estatura (cm) *</label><input id="ret-alt"  type="number" step=".1" placeholder="0.0" oninput="retCalcIMC();retUpdateGrowth()"></div>
+          <div class="field"><label>PC (cm)</label><input id="ret-pc"   type="number" step=".1" placeholder="Perímetro cefálico" oninput="retUpdateGrowth()"></div>
           <div class="field"><label>IMC (kg/m²)</label><input id="ret-imc" type="text" readonly placeholder="—"></div>
         </div>
         <div class="meta">
@@ -1413,14 +1456,26 @@ button.export{background:var(--teal);color:white}
 
         <!-- Gráfico crescimento no retorno -->
         <div class="growth-wrap" style="margin-top:14px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-            <div><b style="font-size:13px">📊 Curva de Crescimento — OMS</b><div class="sub">Histórico + ponto atual</div></div>
-            <select id="ret-growth-sexo" onchange="retUpdateGrowth()" style="border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:12px;font-family:'DM Sans',sans-serif;background:white">
-              <option value="M">Masculino</option><option value="F">Feminino</option>
-            </select>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div><b style="font-size:13px" id="ret-growth-title">📊 Curva de Crescimento — OMS</b><div class="sub" id="ret-growth-subtitle">Peso-para-Idade · Histórico + ponto atual</div></div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+              <select id="ret-growth-tipo" onchange="retUpdateGrowth()" style="border:1px solid var(--line);border-radius:8px;padding:5px 7px;font-size:11px;font-family:'DM Sans',sans-serif;background:white">
+                <option value="WFA_PCT">Peso/Idade — Percentil</option>
+                <option value="WFA_Z">Peso/Idade — Escore Z</option>
+                <option value="HFA_PCT">Altura/Idade — Percentil</option>
+                <option value="HFA_Z">Altura/Idade — Escore Z</option>
+                <option value="BMI_Z">IMC/Idade — Escore Z</option>
+                <option value="HCA_PCT">PC/Idade — Percentil</option>
+                <option value="HCA_Z">PC/Idade — Escore Z</option>
+              </select>
+              <select id="ret-growth-sexo" onchange="retUpdateGrowth()" style="border:1px solid var(--line);border-radius:8px;padding:5px 7px;font-size:11px;font-family:'DM Sans',sans-serif;background:white">
+                <option value="M">Meninos</option><option value="F">Meninas</option>
+              </select>
+            </div>
           </div>
-          <canvas id="retGrowthChart" height="240"></canvas>
-          <div id="ret-growth-result" style="margin-top:8px;font-size:12.5px;color:var(--muted)"></div>
+          <canvas id="retGrowthChart" height="230"></canvas>
+          <div id="ret-growth-result" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+          <div id="ret-growth-ref" style="margin-top:6px;font-size:10px;color:var(--muted);border-top:1px solid var(--line);padding-top:6px"></div>
         </div>
       </div>
 
@@ -3685,50 +3740,13 @@ function retGetAgeMonths() {
 function retUpdateGrowth() {
   const canvas = document.getElementById('retGrowthChart');
   if (!canvas) return;
+  const tipo = document.getElementById('ret-growth-tipo')?.value||'WFA_PCT';
   const sexo = document.getElementById('ret-growth-sexo').value;
-  const ref = WHO_M[sexo];
-  const labels = WHO_M.labels;
-  const pesoAtual = parseFloat(document.getElementById('ret-peso').value);
   const ageM = retGetAgeMonths();
-
-  // Pontos históricos do paciente
-  const arr = JSON.parse(localStorage.getItem('capikids_consultas')||'[]');
-  const nome = retPacienteSelecionado ? retPacienteSelecionado.nome : '';
-  const hist = arr.filter(c => c.nome===nome && c.peso && c.dnasc).map(c => {
-    const nasc = new Date(c.dnasc), dt = new Date(c.dt_consulta||c.timestamp);
-    const m = (dt.getFullYear()-nasc.getFullYear())*12+(dt.getMonth()-nasc.getMonth());
-    return { x: m, y: parseFloat(c.peso) };
-  });
-
-  // Ponto atual (se peso preenchido)
-  const patPts = [...hist];
-  if (!isNaN(pesoAtual) && ageM !== null) patPts.push({ x: ageM, y: pesoAtual });
-
-  const datasets = [
-    {label:'P3',  data:ref.p3,  borderColor:'rgba(163,192,247,.7)',borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false,tension:.4},
-    {label:'P50', data:ref.p50, borderColor:'#1F6FEB',borderWidth:2.5,pointRadius:0,fill:false,tension:.4},
-    {label:'P97', data:ref.p97, borderColor:'rgba(163,192,247,.7)',borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false,tension:.4},
-    {label:'Histórico',data:hist.map(p=>({x:p.x,y:p.y})),borderColor:'rgba(13,148,136,.6)',backgroundColor:'rgba(13,148,136,.6)',borderWidth:1.5,pointRadius:5,showLine:true,tension:.4},
-    {label:'Atual',data:!isNaN(pesoAtual)&&ageM!==null?[{x:ageM,y:pesoAtual}]:[],borderColor:'#E54B4B',backgroundColor:'#E54B4B',borderWidth:2,pointRadius:9,pointBorderColor:'white',pointBorderWidth:2,showLine:false},
-  ];
-
-  const cfg = {type:'line',data:{labels,datasets},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Idade (meses)',font:{size:11}}},y:{title:{display:true,text:'Peso (kg)',font:{size:11}}}}}};
-  if (retGrowthChart) retGrowthChart.destroy();
-  retGrowthChart = new Chart(canvas, cfg);
-
-  // Classificação
-  const res = document.getElementById('ret-growth-result');
-  if (!isNaN(pesoAtual) && ageM !== null && res) {
-    const idx = labels.indexOf(labels.reduce((a,b)=>Math.abs(b-ageM)<Math.abs(a-ageM)?b:a));
-    const p3=ref.p3[idx],p15=ref.p15[idx],p50=ref.p50[idx],p85=ref.p85[idx],p97=ref.p97[idx];
-    let classif='',color='';
-    if(pesoAtual<p3){classif='Abaixo do P3 — Baixo peso grave';color='#C7362F';}
-    else if(pesoAtual<p15){classif='Entre P3–P15 — Baixo peso';color='#C78A14';}
-    else if(pesoAtual<=p85){classif='Entre P15–P85 — Peso adequado ✅';color='#178A4A';}
-    else if(pesoAtual<=p97){classif='Entre P85–P97 — Sobrepeso';color='#C78A14';}
-    else{classif='Acima do P97 — Obesidade';color='#C7362F';}
-    res.innerHTML=`<span style="font-weight:800;color:${color}">${classif}</span> <span style="font-size:11px;color:var(--muted)">· P50 para a idade: ${p50.toFixed(1)} kg · Atual: ${pesoAtual.toFixed(1)} kg</span>`;
-  }
+  const ageYrs = ageM ? ageM/12 : null;
+  const val = getCurrentValueRet(tipo);
+  if (retGrowthChart) { retGrowthChart.destroy(); retGrowthChart=null; }
+  retGrowthChart = buildGrowthChart('retGrowthChart', tipo, sexo, ageM, ageYrs, val, 'ret-growth-');
 }
 
 // Assinatura no retorno
@@ -4148,19 +4166,22 @@ function calcIMC(){
   document.getElementById('f-imc').value=(p&&a)?(p/(a*a)).toFixed(2):'';
 }
 
-// ═══════════════════════════ GRÁFICO CRESCIMENTO OMS ═══════════════════════════
-// Percentis peso-para-idade OMS (aproximados) - meses 0-60
-// [P3, P15, P50, P85, P97]
-const WHO_M = {
+// ═══════════════════════════ GRÁFICO CRESCIMENTO OMS — MULTITIPO ═══════════════════════════
+// Dados das curvas OMS conforme referências SBP/OMS (sbp.com.br)
+// Fontes: OMS 2006 (0-5 anos) e OMS 2007 (5-19 anos)
+
+// ── PESO PARA IDADE (meses) ──────────────────────────────────────────────
+// 0-60 meses (Percentil)
+const WFA_0_60_PCT = {
   labels:[0,1,2,3,4,5,6,7,8,9,10,11,12,15,18,21,24,30,36,42,48,54,60],
-  M:{ // menino
+  M:{
     p3: [2.5,3.4,4.4,5.1,5.6,6.1,6.4,6.7,7.0,7.2,7.5,7.7,7.8,8.3,8.8,9.2,9.7,10.5,11.3,12.0,12.7,13.3,13.9],
     p15:[2.9,3.9,5.0,5.8,6.4,6.9,7.3,7.6,8.0,8.2,8.5,8.7,9.0,9.6,10.2,10.7,11.3,12.2,13.1,13.9,14.7,15.4,16.1],
     p50:[3.3,4.5,5.6,6.4,7.0,7.5,7.9,8.3,8.6,8.9,9.2,9.4,9.6,10.3,11.1,11.8,12.2,13.3,14.3,15.2,16.1,17.0,17.7],
     p85:[3.9,5.1,6.3,7.2,7.9,8.4,8.9,9.3,9.7,10.0,10.4,10.7,11.0,11.8,12.6,13.4,14.1,15.4,16.5,17.5,18.6,19.5,20.4],
     p97:[4.4,5.8,7.1,8.0,8.7,9.3,9.8,10.3,10.7,11.0,11.4,11.7,12.0,12.9,13.8,14.6,15.3,16.8,18.2,19.4,20.5,21.5,22.5]
   },
-  F:{ // menina
+  F:{
     p3: [2.4,3.2,4.0,4.6,5.1,5.5,5.8,6.1,6.3,6.6,6.8,7.0,7.1,7.6,8.1,8.5,9.0,9.9,10.8,11.6,12.3,12.9,13.5],
     p15:[2.8,3.6,4.6,5.3,5.8,6.3,6.6,6.9,7.2,7.5,7.7,7.9,8.1,8.7,9.3,9.8,10.3,11.3,12.3,13.2,14.0,14.8,15.5],
     p50:[3.2,4.2,5.1,5.8,6.4,6.9,7.3,7.6,7.9,8.2,8.5,8.7,8.9,9.6,10.2,10.9,11.5,12.7,13.9,14.9,15.9,16.8,17.7],
@@ -4168,7 +4189,325 @@ const WHO_M = {
     p97:[4.2,5.5,6.6,7.5,8.2,8.8,9.3,9.8,10.2,10.5,10.9,11.2,11.5,12.4,13.3,14.2,14.9,16.4,17.9,19.2,20.5,21.6,22.6]
   }
 };
+// 0-60 meses (Escore Z)
+const WFA_0_60_Z = {
+  labels:[0,1,2,3,4,5,6,7,8,9,10,11,12,15,18,21,24,30,36,42,48,54,60],
+  M:{
+    zm3:[2.1,2.9,3.8,4.4,4.9,5.3,5.7,5.9,6.2,6.4,6.6,6.8,6.9,7.4,7.9,8.3,8.7,9.5,10.3,11.0,11.7,12.4,13.0],
+    zm1:[2.9,3.9,5.0,5.8,6.4,6.9,7.3,7.6,8.0,8.2,8.5,8.7,9.0,9.6,10.2,10.7,11.3,12.2,13.1,13.9,14.7,15.4,16.1],
+    z0: [3.3,4.5,5.6,6.4,7.0,7.5,7.9,8.3,8.6,8.9,9.2,9.4,9.6,10.3,11.1,11.8,12.2,13.3,14.3,15.2,16.1,17.0,17.7],
+    zp1:[3.9,5.1,6.3,7.2,7.9,8.4,8.9,9.3,9.7,10.0,10.4,10.7,11.0,11.8,12.6,13.4,14.1,15.4,16.5,17.5,18.6,19.5,20.4],
+    zp3:[5.0,6.6,8.1,9.2,10.0,10.6,11.2,11.7,12.1,12.5,12.9,13.2,13.5,14.6,15.6,16.4,17.2,18.9,20.5,21.9,23.2,24.4,25.6]
+  },
+  F:{
+    zm3:[2.0,2.7,3.4,4.0,4.4,4.8,5.1,5.3,5.6,5.8,6.0,6.1,6.3,6.7,7.2,7.6,8.1,8.9,9.7,10.5,11.2,11.9,12.5],
+    zm1:[2.8,3.6,4.6,5.3,5.8,6.3,6.6,6.9,7.2,7.5,7.7,7.9,8.1,8.7,9.3,9.8,10.3,11.3,12.3,13.2,14.0,14.8,15.5],
+    z0: [3.2,4.2,5.1,5.8,6.4,6.9,7.3,7.6,7.9,8.2,8.5,8.7,8.9,9.6,10.2,10.9,11.5,12.7,13.9,14.9,15.9,16.8,17.7],
+    zp1:[3.7,4.8,5.8,6.7,7.3,7.8,8.2,8.6,9.0,9.3,9.6,9.9,10.1,10.9,11.7,12.4,13.0,14.4,15.7,16.8,17.9,18.9,19.8],
+    zp3:[4.8,6.2,7.5,8.5,9.3,9.9,10.4,10.8,11.3,11.7,12.1,12.4,12.6,13.7,14.7,15.6,16.4,18.2,19.8,21.3,22.7,24.0,25.2]
+  }
+};
+// 5-10 anos (Percentil) — em kg, idades em anos
+const WFA_5_10_PCT = {
+  labels:[5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10],
+  M:{
+    p3: [13.9,14.7,15.5,16.3,17.1,18.0,18.9,19.8,20.8,21.8,22.9],
+    p15:[16.1,17.0,17.9,18.9,19.9,20.9,22.0,23.2,24.5,25.8,27.2],
+    p50:[17.7,18.9,20.1,21.4,22.8,24.3,25.9,27.5,29.3,31.2,33.2],
+    p85:[20.4,21.8,23.4,25.1,26.9,29.0,31.3,33.8,36.5,39.5,42.7],
+    p97:[22.5,24.2,26.1,28.3,30.7,33.4,36.5,39.9,43.7,47.8,52.3]
+  },
+  F:{
+    p3: [13.5,14.3,15.2,16.1,17.0,18.0,19.0,20.0,21.1,22.3,23.5],
+    p15:[15.5,16.5,17.5,18.6,19.7,20.9,22.2,23.6,25.1,26.7,28.4],
+    p50:[17.7,18.9,20.2,21.6,23.1,24.7,26.5,28.4,30.5,32.7,35.1],
+    p85:[19.8,21.3,22.9,24.7,26.7,28.9,31.4,34.1,37.1,40.5,44.1],
+    p97:[22.6,24.4,26.4,28.7,31.3,34.3,37.7,41.5,45.8,50.5,55.5]
+  }
+};
+// 5-10 anos (Escore Z)
+const WFA_5_10_Z = {
+  labels:[5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10],
+  M:{
+    zm3:[13.0,13.8,14.6,15.4,16.2,17.1,18.0,19.0,20.0,21.1,22.2],
+    zm1:[16.1,17.0,17.9,18.9,19.9,20.9,22.0,23.2,24.5,25.8,27.2],
+    z0: [17.7,18.9,20.1,21.4,22.8,24.3,25.9,27.5,29.3,31.2,33.2],
+    zp1:[20.4,21.8,23.4,25.1,26.9,29.0,31.3,33.8,36.5,39.5,42.7],
+    zp3:[25.5,27.5,29.8,32.5,35.6,39.2,43.3,47.9,53.1,58.9,65.3]
+  },
+  F:{
+    zm3:[12.5,13.3,14.1,15.0,15.9,16.8,17.8,18.8,19.9,21.1,22.3],
+    zm1:[15.5,16.5,17.5,18.6,19.7,20.9,22.2,23.6,25.1,26.7,28.4],
+    z0: [17.7,18.9,20.2,21.6,23.1,24.7,26.5,28.4,30.5,32.7,35.1],
+    zp1:[19.8,21.3,22.9,24.7,26.7,28.9,31.4,34.1,37.1,40.5,44.1],
+    zp3:[24.8,26.9,29.3,32.1,35.3,38.9,43.0,47.6,52.9,58.8,65.2]
+  }
+};
 
+// ── ALTURA PARA IDADE ──────────────────────────────────────────────────────
+// 0-5 anos (Percentil) — cm
+const HFA_0_60_PCT = {
+  labels:[0,1,2,3,4,5,6,7,8,9,10,11,12,15,18,21,24,30,36,42,48,54,60],
+  M:{
+    p3: [46.3,50.8,54.4,57.3,59.7,61.7,63.3,65.0,66.4,67.7,69.0,70.2,71.3,74.2,77.0,79.4,81.6,86.0,90.0,93.6,96.9,100.0,103.0],
+    p15:[48.1,52.8,56.5,59.5,62.0,64.1,65.8,67.5,69.0,70.4,71.7,73.0,74.0,77.1,80.0,82.6,85.0,89.6,93.8,97.6,101.1,104.3,107.3],
+    p50:[49.9,54.7,58.4,61.4,63.9,65.9,67.6,69.2,70.6,72.0,73.3,74.5,75.7,79.1,82.3,85.1,87.8,92.7,97.2,101.2,104.9,108.3,111.4],
+    p85:[51.6,56.7,60.3,63.4,65.8,67.9,69.7,71.3,72.8,74.2,75.6,76.8,78.1,81.7,85.0,87.9,90.7,95.8,100.4,104.6,108.4,111.9,115.1],
+    p97:[53.4,58.6,62.4,65.5,68.0,70.1,71.9,73.5,75.0,76.5,77.9,79.2,80.5,84.2,87.6,90.7,93.6,98.9,103.7,108.1,112.0,115.6,118.9]
+  },
+  F:{
+    p3: [45.6,49.8,53.0,55.6,57.8,59.6,61.2,62.7,64.0,65.3,66.5,67.7,68.8,71.9,74.8,77.4,79.8,84.3,88.5,92.3,95.8,99.1,102.2],
+    p15:[47.4,51.7,55.0,57.7,60.0,61.8,63.5,65.0,66.4,67.7,68.9,70.1,71.2,74.4,77.4,80.1,82.6,87.3,91.7,95.7,99.3,102.6,105.7],
+    p50:[49.1,53.7,57.1,59.8,62.1,64.0,65.7,67.3,68.7,70.1,71.5,72.8,74.0,77.5,80.7,83.5,86.4,91.3,95.8,100.0,103.7,107.2,110.4],
+    p85:[50.9,55.6,59.1,61.9,64.2,66.2,68.0,69.6,71.1,72.5,73.8,75.2,76.5,80.2,83.5,86.5,89.4,94.5,99.2,103.5,107.4,111.0,114.3],
+    p97:[52.7,57.6,61.1,64.0,66.4,68.5,70.3,71.9,73.5,74.9,76.3,77.7,79.0,82.9,86.3,89.4,92.4,97.7,102.6,107.1,111.2,114.9,118.3]
+  }
+};
+// 0-5 anos (Escore Z) — cm
+const HFA_0_60_Z = {
+  labels:[0,1,2,3,4,5,6,7,8,9,10,11,12,15,18,21,24,30,36,42,48,54,60],
+  M:{
+    zm3:[44.2,48.9,52.4,55.3,57.6,59.6,61.2,62.7,64.0,65.2,66.4,67.6,68.6,71.7,74.7,77.2,79.5,84.0,88.3,92.1,95.6,98.9,102.0],
+    zm1:[48.1,52.8,56.5,59.5,62.0,64.1,65.8,67.5,69.0,70.4,71.7,73.0,74.0,77.1,80.0,82.6,85.0,89.6,93.8,97.6,101.1,104.3,107.3],
+    z0: [49.9,54.7,58.4,61.4,63.9,65.9,67.6,69.2,70.6,72.0,73.3,74.5,75.7,79.1,82.3,85.1,87.8,92.7,97.2,101.2,104.9,108.3,111.4],
+    zp1:[51.6,56.7,60.3,63.4,65.8,67.9,69.7,71.3,72.8,74.2,75.6,76.8,78.1,81.7,85.0,87.9,90.7,95.8,100.4,104.6,108.4,111.9,115.1],
+    zp3:[55.4,60.6,64.4,67.6,70.2,72.4,74.3,76.0,77.5,79.0,80.4,81.8,83.2,87.1,90.6,93.8,96.8,102.2,107.0,111.5,115.5,119.2,122.7]
+  },
+  F:{
+    zm3:[43.6,47.8,51.0,53.5,55.6,57.4,58.9,60.3,61.7,62.9,64.1,65.2,66.3,69.3,72.0,74.6,76.9,81.4,85.7,89.6,93.2,96.6,99.8],
+    zm1:[47.4,51.7,55.0,57.7,60.0,61.8,63.5,65.0,66.4,67.7,68.9,70.1,71.2,74.4,77.4,80.1,82.6,87.3,91.7,95.7,99.3,102.6,105.7],
+    z0: [49.1,53.7,57.1,59.8,62.1,64.0,65.7,67.3,68.7,70.1,71.5,72.8,74.0,77.5,80.7,83.5,86.4,91.3,95.8,100.0,103.7,107.2,110.4],
+    zp1:[50.9,55.6,59.1,61.9,64.2,66.2,68.0,69.6,71.1,72.5,73.8,75.2,76.5,80.2,83.5,86.5,89.4,94.5,99.2,103.5,107.4,111.0,114.3],
+    zp3:[54.7,59.5,63.2,66.0,68.4,70.5,72.5,74.2,75.7,77.2,78.7,80.1,81.5,85.5,88.9,92.1,95.1,100.6,105.5,110.0,114.2,118.1,121.8]
+  }
+};
+// 5-19 anos (Percentil) — cm, idades em anos
+const HFA_5_19_PCT = {
+  labels:[5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,10.5,11,11.5,12,12.5,13,13.5,14,14.5,15,15.5,16,16.5,17,17.5,18,18.5,19],
+  M:{
+    p3: [103.0,105.5,108.3,110.7,113.0,115.2,117.3,119.5,121.7,123.9,126.1,128.3,130.6,132.9,135.4,138.0,140.7,143.5,146.2,148.9,151.4,153.7,155.8,157.5,159.0,160.2,161.1,161.8,162.3],
+    p15:[107.3,109.8,112.7,115.2,117.5,119.8,122.0,124.3,126.6,128.9,131.2,133.6,136.0,138.5,141.0,143.7,146.5,149.3,152.1,154.7,157.1,159.3,161.2,162.8,164.2,165.3,166.1,166.7,167.1],
+    p50:[111.4,114.0,117.0,119.5,122.0,124.3,126.6,129.0,131.4,133.8,136.2,138.7,141.2,143.8,146.4,149.0,151.7,154.3,156.9,159.3,161.5,163.5,165.2,166.5,167.5,168.3,168.8,169.1,169.4],
+    p85:[115.1,117.9,121.0,123.7,126.2,128.7,131.1,133.6,136.1,138.7,141.2,143.8,146.3,148.8,151.3,153.7,156.1,158.5,160.9,163.0,164.9,166.5,167.8,168.8,169.5,170.1,170.4,170.6,170.7],
+    p97:[118.9,121.9,125.1,128.0,130.6,133.2,135.8,138.4,140.9,143.5,146.0,148.5,151.0,153.5,156.0,158.4,160.8,163.1,165.3,167.3,169.1,170.5,171.7,172.5,173.1,173.5,173.7,173.8,173.9]
+  },
+  F:{
+    p3: [102.2,104.8,107.5,110.0,112.4,114.8,117.2,119.5,121.8,124.0,126.2,128.3,130.4,132.4,134.3,136.1,137.8,139.4,140.9,142.3,143.5,144.6,145.6,146.5,147.2,147.8,148.3,148.7,149.1],
+    p15:[105.7,108.4,111.1,113.7,116.2,118.6,121.0,123.4,125.7,128.0,130.2,132.4,134.5,136.5,138.4,140.2,142.0,143.7,145.3,146.8,148.2,149.4,150.5,151.5,152.4,153.1,153.7,154.2,154.6],
+    p50:[110.4,113.2,116.1,118.8,121.3,123.8,126.3,128.7,131.1,133.4,135.7,137.9,140.0,142.0,143.9,145.7,147.4,149.1,150.6,152.1,153.4,154.6,155.7,156.6,157.4,158.0,158.6,159.0,159.4],
+    p85:[114.3,117.2,120.2,123.0,125.6,128.1,130.6,133.0,135.4,137.8,140.1,142.3,144.4,146.4,148.3,150.1,151.7,153.3,154.7,156.1,157.3,158.4,159.4,160.3,161.0,161.6,162.1,162.5,162.9],
+    p97:[118.3,121.5,124.7,127.7,130.5,133.2,135.9,138.5,141.0,143.5,145.9,148.2,150.4,152.5,154.5,156.4,158.1,159.7,161.1,162.5,163.7,164.7,165.7,166.5,167.2,167.8,168.3,168.7,169.1]
+  }
+};
+// 5-19 anos (Escore Z)
+const HFA_5_19_Z = {
+  labels:[5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,10.5,11,11.5,12,12.5,13,13.5,14,14.5,15,15.5,16,16.5,17,17.5,18,18.5,19],
+  M:{
+    zm3:[103.0,105.5,108.3,110.7,113.0,115.2,117.3,119.5,121.7,123.9,126.1,128.3,130.6,132.9,135.4,138.0,140.7,143.5,146.2,148.9,151.4,153.7,155.8,157.5,159.0,160.2,161.1,161.8,162.3],
+    zm1:[107.3,109.8,112.7,115.2,117.5,119.8,122.0,124.3,126.6,128.9,131.2,133.6,136.0,138.5,141.0,143.7,146.5,149.3,152.1,154.7,157.1,159.3,161.2,162.8,164.2,165.3,166.1,166.7,167.1],
+    z0: [111.4,114.0,117.0,119.5,122.0,124.3,126.6,129.0,131.4,133.8,136.2,138.7,141.2,143.8,146.4,149.0,151.7,154.3,156.9,159.3,161.5,163.5,165.2,166.5,167.5,168.3,168.8,169.1,169.4],
+    zp1:[115.1,117.9,121.0,123.7,126.2,128.7,131.1,133.6,136.1,138.7,141.2,143.8,146.3,148.8,151.3,153.7,156.1,158.5,160.9,163.0,164.9,166.5,167.8,168.8,169.5,170.1,170.4,170.6,170.7],
+    zp3:[118.9,121.9,125.1,128.0,130.6,133.2,135.8,138.4,140.9,143.5,146.0,148.5,151.0,153.5,156.0,158.4,160.8,163.1,165.3,167.3,169.1,170.5,171.7,172.5,173.1,173.5,173.7,173.8,173.9]
+  },
+  F:{
+    zm3:[102.2,104.8,107.5,110.0,112.4,114.8,117.2,119.5,121.8,124.0,126.2,128.3,130.4,132.4,134.3,136.1,137.8,139.4,140.9,142.3,143.5,144.6,145.6,146.5,147.2,147.8,148.3,148.7,149.1],
+    zm1:[105.7,108.4,111.1,113.7,116.2,118.6,121.0,123.4,125.7,128.0,130.2,132.4,134.5,136.5,138.4,140.2,142.0,143.7,145.3,146.8,148.2,149.4,150.5,151.5,152.4,153.1,153.7,154.2,154.6],
+    z0: [110.4,113.2,116.1,118.8,121.3,123.8,126.3,128.7,131.1,133.4,135.7,137.9,140.0,142.0,143.9,145.7,147.4,149.1,150.6,152.1,153.4,154.6,155.7,156.6,157.4,158.0,158.6,159.0,159.4],
+    zp1:[114.3,117.2,120.2,123.0,125.6,128.1,130.6,133.0,135.4,137.8,140.1,142.3,144.4,146.4,148.3,150.1,151.7,153.3,154.7,156.1,157.3,158.4,159.4,160.3,161.0,161.6,162.1,162.5,162.9],
+    zp3:[118.3,121.5,124.7,127.7,130.5,133.2,135.9,138.5,141.0,143.5,145.9,148.2,150.4,152.5,154.5,156.4,158.1,159.7,161.1,162.5,163.7,164.7,165.7,166.5,167.2,167.8,168.3,168.7,169.1]
+  }
+};
+
+// ── IMC PARA IDADE (Escore Z) — kg/m², meses 0-60 ──────────────────────
+const BMI_0_60_Z = {
+  labels:[0,1,2,3,4,5,6,7,8,9,10,11,12,15,18,21,24,30,36,42,48,54,60],
+  M:{
+    zm3:[10.2,11.2,12.4,12.7,12.7,12.6,12.5,12.4,12.3,12.2,12.1,12.0,12.0,11.8,11.7,11.6,11.6,11.4,11.2,11.0,10.9,10.8,10.7],
+    zm1:[12.0,13.2,14.4,14.8,14.9,14.8,14.7,14.6,14.5,14.4,14.3,14.2,14.2,14.0,13.9,13.8,13.8,13.6,13.4,13.2,13.1,13.0,12.9],
+    z0: [13.4,14.8,16.1,16.6,16.7,16.6,16.5,16.4,16.3,16.2,16.1,16.0,15.9,15.7,15.6,15.5,15.5,15.3,15.1,14.9,14.7,14.6,14.5],
+    zp1:[14.9,16.6,18.0,18.5,18.6,18.5,18.5,18.4,18.3,18.2,18.1,18.0,18.0,17.8,17.6,17.5,17.4,17.3,17.1,16.8,16.7,16.5,16.4],
+    zp3:[17.9,19.8,21.5,22.1,22.2,22.2,22.1,22.1,22.0,21.9,21.9,21.8,21.8,21.5,21.2,21.1,21.0,20.9,20.6,20.3,20.1,19.9,19.8]
+  },
+  F:{
+    zm3:[10.1,11.1,12.2,12.5,12.5,12.4,12.3,12.2,12.1,12.0,11.9,11.8,11.7,11.5,11.4,11.3,11.2,11.0,10.8,10.6,10.5,10.3,10.2],
+    zm1:[11.8,13.0,14.1,14.5,14.5,14.4,14.3,14.2,14.1,14.0,13.9,13.8,13.8,13.5,13.4,13.3,13.2,13.0,12.8,12.6,12.4,12.3,12.2],
+    z0: [13.3,14.6,15.8,16.2,16.3,16.2,16.1,16.0,15.9,15.8,15.7,15.6,15.5,15.3,15.1,15.0,14.9,14.7,14.5,14.3,14.1,14.0,13.9],
+    zp1:[14.8,16.2,17.6,18.0,18.1,18.0,17.9,17.8,17.7,17.6,17.5,17.4,17.4,17.1,17.0,16.8,16.8,16.5,16.3,16.1,15.9,15.8,15.7],
+    zp3:[17.7,19.5,21.1,21.7,21.8,21.8,21.7,21.6,21.6,21.5,21.5,21.4,21.4,21.1,21.0,20.8,20.8,20.6,20.4,20.2,20.1,20.0,19.9]
+  }
+};
+
+// ── PERÍMETRO CEFÁLICO (meses 0-60, em cm) ──────────────────────────────
+const HCA_0_60_PCT = {
+  labels:[0,1,2,3,4,5,6,7,8,9,10,11,12,15,18,21,24,30,36,42,48,54,60],
+  M:{
+    p3: [31.9,34.9,37.1,38.7,39.9,41.0,41.9,42.7,43.5,44.1,44.6,45.1,45.5,46.6,47.4,48.1,48.6,49.4,50.0,50.5,51.0,51.3,51.7],
+    p15:[33.2,36.2,38.4,40.1,41.4,42.5,43.4,44.2,45.0,45.6,46.2,46.7,47.1,48.2,49.1,49.8,50.3,51.2,51.8,52.3,52.7,53.1,53.5],
+    p50:[34.5,37.3,39.1,40.5,41.6,42.6,43.5,44.4,45.2,45.9,46.5,47.0,47.5,48.7,49.7,50.5,51.1,52.0,52.6,53.2,53.7,54.1,54.5],
+    p85:[35.8,38.3,40.2,41.6,42.8,43.8,44.8,45.7,46.5,47.2,47.8,48.3,48.8,50.1,51.1,51.9,52.6,53.5,54.2,54.8,55.3,55.7,56.1],
+    p97:[37.1,39.5,41.5,43.0,44.2,45.3,46.3,47.2,48.0,48.7,49.4,49.9,50.4,51.7,52.7,53.6,54.3,55.2,56.0,56.6,57.1,57.5,57.9]
+  },
+  F:{
+    p3: [31.7,34.2,36.1,37.5,38.7,39.7,40.6,41.4,42.1,42.7,43.2,43.7,44.2,45.3,46.2,47.0,47.6,48.6,49.3,49.9,50.5,51.0,51.4],
+    p15:[32.8,35.3,37.3,38.8,40.0,41.1,42.0,42.9,43.6,44.3,44.9,45.4,45.9,47.1,48.0,48.8,49.4,50.4,51.2,51.8,52.4,52.9,53.3],
+    p50:[33.9,36.5,38.3,39.5,40.6,41.5,42.3,43.1,43.8,44.5,45.1,45.6,46.1,47.3,48.3,49.1,49.8,50.8,51.6,52.3,52.9,53.4,53.9],
+    p85:[34.9,37.5,39.3,40.6,41.7,42.7,43.6,44.4,45.2,45.9,46.5,47.0,47.5,48.8,49.8,50.7,51.4,52.4,53.3,54.0,54.6,55.2,55.7],
+    p97:[36.1,38.7,40.7,42.1,43.2,44.3,45.2,46.0,46.8,47.5,48.2,48.7,49.3,50.6,51.7,52.6,53.4,54.5,55.4,56.1,56.8,57.4,57.9]
+  }
+};
+const HCA_0_60_Z = {
+  labels:[0,1,2,3,4,5,6,7,8,9,10,11,12,15,18,21,24,30,36,42,48,54,60],
+  M:{
+    zm3:[31.5,34.5,36.7,38.3,39.5,40.5,41.4,42.2,42.9,43.6,44.1,44.6,45.1,46.2,47.0,47.7,48.3,49.1,49.8,50.3,50.8,51.2,51.6],
+    zm1:[33.2,36.2,38.4,40.1,41.4,42.5,43.4,44.2,45.0,45.6,46.2,46.7,47.1,48.2,49.1,49.8,50.3,51.2,51.8,52.3,52.7,53.1,53.5],
+    z0: [34.5,37.3,39.1,40.5,41.6,42.6,43.5,44.4,45.2,45.9,46.5,47.0,47.5,48.7,49.7,50.5,51.1,52.0,52.6,53.2,53.7,54.1,54.5],
+    zp1:[35.8,38.3,40.2,41.6,42.8,43.8,44.8,45.7,46.5,47.2,47.8,48.3,48.8,50.1,51.1,51.9,52.6,53.5,54.2,54.8,55.3,55.7,56.1],
+    zp3:[38.3,40.5,42.6,44.1,45.4,46.5,47.5,48.4,49.3,50.0,50.7,51.3,51.8,53.2,54.2,55.1,55.8,56.9,57.7,58.4,59.0,59.5,59.9]
+  },
+  F:{
+    zm3:[31.5,33.9,35.8,37.1,38.2,39.2,40.0,40.8,41.5,42.1,42.7,43.1,43.6,44.7,45.5,46.3,46.9,47.8,48.6,49.2,49.7,50.2,50.6],
+    zm1:[32.8,35.3,37.3,38.8,40.0,41.1,42.0,42.9,43.6,44.3,44.9,45.4,45.9,47.1,48.0,48.8,49.4,50.4,51.2,51.8,52.4,52.9,53.3],
+    z0: [33.9,36.5,38.3,39.5,40.6,41.5,42.3,43.1,43.8,44.5,45.1,45.6,46.1,47.3,48.3,49.1,49.8,50.8,51.6,52.3,52.9,53.4,53.9],
+    zp1:[34.9,37.5,39.3,40.6,41.7,42.7,43.6,44.4,45.2,45.9,46.5,47.0,47.5,48.8,49.8,50.7,51.4,52.4,53.3,54.0,54.6,55.2,55.7],
+    zp3:[37.3,39.7,41.7,43.2,44.4,45.5,46.4,47.3,48.1,48.9,49.5,50.1,50.7,52.1,53.2,54.1,54.9,56.0,57.0,57.8,58.5,59.1,59.6]
+  }
+};
+
+// ── CONFIGURAÇÕES DOS TIPOS DE CURVA ─────────────────────────────────────
+const GROWTH_CONFIG = {
+  WFA_PCT: {
+    label:'Peso-para-Idade (Percentil)',
+    yLabel:'Peso (kg)',
+    xLabel:'Idade (meses)',
+    legendMid:'P50 (mediana)',
+    legendOuter:'P3 / P97',
+    legendInner:'P15 / P85',
+    isZ:false,
+    getData(sexo,ageM){ const d=ageM<=60?WFA_0_60_PCT:WFA_5_10_PCT; return {ref:d[sexo],labels:d.labels,ageM}; },
+    classify(val,ref,idx){ const {p3,p15,p50,p85,p97}=ref; const v0=p3[idx]; const v1=p15[idx]; const v2=p50[idx]; const v3=p85[idx]; const v4=p97[idx];
+      if(val<v0) return {txt:`Abaixo do P3 — Baixo peso grave`,cl:'bad',ref50:`P50: ${v2.toFixed(1)} kg`};
+      if(val<v1) return {txt:`Entre P3–P15 — Baixo peso`,cl:'warn',ref50:`P50: ${v2.toFixed(1)} kg`};
+      if(val<=v3) return {txt:`Entre P15–P85 — Peso adequado ✅`,cl:'ok',ref50:`P50: ${v2.toFixed(1)} kg`};
+      if(val<=v4) return {txt:`Entre P85–P97 — Sobrepeso`,cl:'warn',ref50:`P50: ${v2.toFixed(1)} kg`};
+      return {txt:`Acima do P97 — Obesidade`,cl:'bad',ref50:`P50: ${v2.toFixed(1)} kg`};
+    },
+    unit:'kg',
+    srcUrl:'https://www.sbp.com.br/fileadmin/user_upload/sbp/2022/abril/27/OMS._Peso_para_Idade__Meninos_._0-5_anos._Em_Percentil..pdf'
+  },
+  WFA_Z: {
+    label:'Peso-para-Idade (Escore Z)',
+    yLabel:'Peso (kg)',xLabel:'Idade (meses)',
+    legendMid:'Mediana (Z=0)',legendOuter:'Z-3 / Z+3',legendInner:'Z-1 / Z+1',
+    isZ:true,
+    getData(sexo,ageM){ const d=ageM<=60?WFA_0_60_Z:WFA_5_10_Z; return {ref:d[sexo],labels:d.labels,ageM}; },
+    classify(val,ref,idx){ const {zm3,zm1,z0,zp1,zp3}=ref;
+      if(val<zm3[idx]) return {txt:'Abaixo de Z-3 — Baixo peso acentuado',cl:'bad',ref50:`Z=0: ${z0[idx].toFixed(1)} kg`};
+      if(val<zm1[idx]) return {txt:'Entre Z-3 e Z-1 — Baixo peso',cl:'warn',ref50:`Z=0: ${z0[idx].toFixed(1)} kg`};
+      if(val<=zp1[idx]) return {txt:'Entre Z-1 e Z+1 — Peso adequado ✅',cl:'ok',ref50:`Z=0: ${z0[idx].toFixed(1)} kg`};
+      if(val<=zp3[idx]) return {txt:'Entre Z+1 e Z+3 — Excesso de peso',cl:'warn',ref50:`Z=0: ${z0[idx].toFixed(1)} kg`};
+      return {txt:'Acima de Z+3 — Obesidade',cl:'bad',ref50:`Z=0: ${z0[idx].toFixed(1)} kg`};
+    },
+    unit:'kg',
+    srcUrl:'https://www.sbp.com.br/fileadmin/user_upload/sbp/2022/abril/27/OMS._Peso_para_Idade__Meninos_._0-5_anos._Em_Z_score.pdf'
+  },
+  HFA_PCT: {
+    label:'Estatura-para-Idade (Percentil)',
+    yLabel:'Estatura (cm)',xLabel:'Idade',
+    legendMid:'P50 (mediana)',legendOuter:'P3 / P97',legendInner:'P15 / P85',
+    isZ:false,
+    getData(sexo,ageM){ const isMo=ageM<=60; const d=isMo?HFA_0_60_PCT:HFA_5_19_PCT; return {ref:d[sexo],labels:d.labels,ageM,isMo}; },
+    classify(val,ref,idx){ const {p3,p15,p50,p85,p97}=ref;
+      if(val<p3[idx]) return {txt:'Abaixo do P3 — Baixa estatura',cl:'bad',ref50:`P50: ${p50[idx].toFixed(1)} cm`};
+      if(val<p15[idx]) return {txt:'Entre P3–P15 — Estatura limítrofe',cl:'warn',ref50:`P50: ${p50[idx].toFixed(1)} cm`};
+      if(val<=p85[idx]) return {txt:'Entre P15–P85 — Estatura adequada ✅',cl:'ok',ref50:`P50: ${p50[idx].toFixed(1)} cm`};
+      if(val<=p97[idx]) return {txt:'Entre P85–P97 — Acima da mediana',cl:'ok',ref50:`P50: ${p50[idx].toFixed(1)} cm`};
+      return {txt:'Acima do P97 — Estatura elevada',cl:'ok',ref50:`P50: ${p50[idx].toFixed(1)} cm`};
+    },
+    unit:'cm',
+    srcUrl:'https://www.sbp.com.br/fileadmin/user_upload/sbp/2022/abril/27/OMS._Altura_para_Idade__Meninos_._0-5_anos._Em_Percentil..pdf'
+  },
+  HFA_Z: {
+    label:'Estatura-para-Idade (Escore Z)',
+    yLabel:'Estatura (cm)',xLabel:'Idade',
+    legendMid:'Mediana (Z=0)',legendOuter:'Z-3 / Z+3',legendInner:'Z-1 / Z+1',
+    isZ:true,
+    getData(sexo,ageM){ const isMo=ageM<=60; const d=isMo?HFA_0_60_Z:HFA_5_19_Z; return {ref:d[sexo],labels:d.labels,ageM,isMo}; },
+    classify(val,ref,idx){ const {zm3,zm1,z0,zp1,zp3}=ref;
+      if(val<zm3[idx]) return {txt:'Abaixo de Z-3 — Baixa estatura acentuada',cl:'bad',ref50:`Z=0: ${z0[idx].toFixed(1)} cm`};
+      if(val<zm1[idx]) return {txt:'Entre Z-3 e Z-1 — Baixa estatura',cl:'warn',ref50:`Z=0: ${z0[idx].toFixed(1)} cm`};
+      if(val<=zp1[idx]) return {txt:'Entre Z-1 e Z+1 — Estatura adequada ✅',cl:'ok',ref50:`Z=0: ${z0[idx].toFixed(1)} cm`};
+      return {txt:'Acima de Z+1 — Estatura acima da mediana',cl:'ok',ref50:`Z=0: ${z0[idx].toFixed(1)} cm`};
+    },
+    unit:'cm',
+    srcUrl:'https://www.sbp.com.br/fileadmin/user_upload/sbp/2022/abril/27/OMS._Altura_para_Idade__Meninos_._0-5_anos._Em_Z_score..pdf'
+  },
+  BMI_Z: {
+    label:'IMC-para-Idade (Escore Z)',
+    yLabel:'IMC (kg/m²)',xLabel:'Idade (meses)',
+    legendMid:'Mediana (Z=0)',legendOuter:'Z-3 / Z+3',legendInner:'Z-1 / Z+1',
+    isZ:true,
+    getData(sexo,ageM){ return {ref:BMI_0_60_Z[sexo],labels:BMI_0_60_Z.labels,ageM}; },
+    classify(val,ref,idx){ const {zm3,zm1,z0,zp1,zp3}=ref;
+      if(val<zm3[idx]) return {txt:'Abaixo de Z-3 — Magreza acentuada',cl:'bad',ref50:`Z=0: ${z0[idx].toFixed(1)} kg/m²`};
+      if(val<zm1[idx]) return {txt:'Entre Z-3 e Z-1 — Magreza',cl:'warn',ref50:`Z=0: ${z0[idx].toFixed(1)} kg/m²`};
+      if(val<=zp1[idx]) return {txt:'Entre Z-1 e Z+1 — Eutrófico ✅',cl:'ok',ref50:`Z=0: ${z0[idx].toFixed(1)} kg/m²`};
+      if(val<=zp3[idx]) return {txt:'Entre Z+1 e Z+3 — Risco de sobrepeso/Obesidade',cl:'warn',ref50:`Z=0: ${z0[idx].toFixed(1)} kg/m²`};
+      return {txt:'Acima de Z+3 — Obesidade grave',cl:'bad',ref50:`Z=0: ${z0[idx].toFixed(1)} kg/m²`};
+    },
+    unit:'kg/m²',
+    srcUrl:'https://www.sbp.com.br/fileadmin/user_upload/Curva_de_IMC._OMS._Meninos__de_0_a_5_anos._Escore_Z.pdf'
+  },
+  HCA_PCT: {
+    label:'Perímetro Cefálico-para-Idade (Percentil)',
+    yLabel:'PC (cm)',xLabel:'Idade (meses)',
+    legendMid:'P50 (mediana)',legendOuter:'P3 / P97',legendInner:'P15 / P85',
+    isZ:false,
+    getData(sexo,ageM){ return {ref:HCA_0_60_PCT[sexo],labels:HCA_0_60_PCT.labels,ageM}; },
+    classify(val,ref,idx){ const {p3,p15,p50,p85,p97}=ref;
+      if(val<p3[idx]) return {txt:'Abaixo do P3 — Microcefalia',cl:'bad',ref50:`P50: ${p50[idx].toFixed(1)} cm`};
+      if(val<=p97[idx]) return {txt:'Entre P3–P97 — PC adequado ✅',cl:'ok',ref50:`P50: ${p50[idx].toFixed(1)} cm`};
+      return {txt:'Acima do P97 — Macrocefalia',cl:'warn',ref50:`P50: ${p50[idx].toFixed(1)} cm`};
+    },
+    unit:'cm',
+    srcUrl:'https://www.sbp.com.br/fileadmin/user_upload/sbp/2022/abril/27/OMS._Perimetro_cefalico__Meninos_._0-5_anos._Em_Percentil..pdf'
+  },
+  HCA_Z: {
+    label:'Perímetro Cefálico-para-Idade (Escore Z)',
+    yLabel:'PC (cm)',xLabel:'Idade (meses)',
+    legendMid:'Mediana (Z=0)',legendOuter:'Z-3 / Z+3',legendInner:'Z-1 / Z+1',
+    isZ:true,
+    getData(sexo,ageM){ return {ref:HCA_0_60_Z[sexo],labels:HCA_0_60_Z.labels,ageM}; },
+    classify(val,ref,idx){ const {zm3,zm1,z0,zp1,zp3}=ref;
+      if(val<zm3[idx]) return {txt:'Abaixo de Z-3 — Microcefalia acentuada',cl:'bad',ref50:`Z=0: ${z0[idx].toFixed(1)} cm`};
+      if(val<zm1[idx]) return {txt:'Entre Z-3 e Z-1 — Abaixo da mediana',cl:'warn',ref50:`Z=0: ${z0[idx].toFixed(1)} cm`};
+      if(val<=zp1[idx]) return {txt:'Entre Z-1 e Z+1 — PC adequado ✅',cl:'ok',ref50:`Z=0: ${z0[idx].toFixed(1)} cm`};
+      if(val<=zp3[idx]) return {txt:'Entre Z+1 e Z+3 — PC acima da mediana',cl:'warn',ref50:`Z=0: ${z0[idx].toFixed(1)} cm`};
+      return {txt:'Acima de Z+3 — Macrocefalia',cl:'bad',ref50:`Z=0: ${z0[idx].toFixed(1)} cm`};
+    },
+    unit:'cm',
+    srcUrl:'https://www.sbp.com.br/fileadmin/user_upload/sbp/2022/abril/27/OMS._Perimetro_cefalico__Meninos_._0-5_anos._Em_Z_score..pdf'
+  }
+};
+
+// ── Referências por tipo e sexo ────────────────────────────────────────────
+const GROWTH_REFS = {
+  WFA_PCT:{M:'OMS: Peso para Idade (Meninos), 0-5 anos, em Percentil. SBP/WHO 2006.',
+            F:'OMS: Peso para Idade (Meninas), 0-5 anos, em Percentil. SBP/WHO 2006.'},
+  WFA_Z:  {M:'OMS: Peso para Idade (Meninos), 0-5 anos, em Escore Z. SBP/WHO 2006.',
+            F:'OMS: Peso para Idade (Meninas), 0-5 anos, em Escore Z. SBP/WHO 2006.'},
+  HFA_PCT:{M:'OMS: Altura para Idade (Meninos), 0-5 e 5-19 anos, em Percentil. SBP/WHO 2006/2007.',
+            F:'OMS: Altura para Idade (Meninas), 0-5 e 5-19 anos, em Percentil. SBP/WHO 2006/2007.'},
+  HFA_Z:  {M:'OMS: Altura para Idade (Meninos), 0-5 e 5-19 anos, em Escore Z. SBP/WHO 2006/2007.',
+            F:'OMS: Altura para Idade (Meninas), 0-5 e 5-19 anos, em Escore Z. SBP/WHO 2006/2007.'},
+  BMI_Z:  {M:'OMS: IMC para Idade (Meninos), 0-5 anos, em Escore Z. SBP/WHO 2006.',
+            F:'OMS: IMC para Idade (Meninas), 0-5 anos, em Escore Z. SBP/WHO 2006.'},
+  HCA_PCT:{M:'OMS: Perímetro Cefálico (Meninos), 0-5 anos, em Percentil. SBP/WHO 2006.',
+            F:'OMS: Perímetro Cefálico (Meninas), 0-5 anos, em Percentil. SBP/WHO 2006.'},
+  HCA_Z:  {M:'OMS: Perímetro Cefálico (Meninos), 0-5 anos, em Escore Z. SBP/WHO 2006.',
+            F:'OMS: Perímetro Cefálico (Meninas), 0-5 anos, em Escore Z. SBP/WHO 2006.'}
+};
+
+// ── Helpers ────────────────────────────────────────────────────────────────
 function getAgeMonths(){
   const v=document.getElementById('f-dnasc').value;
   if(!v) return null;
@@ -4176,47 +4515,140 @@ function getAgeMonths(){
   return (hoje.getFullYear()-nasc.getFullYear())*12+(hoje.getMonth()-nasc.getMonth());
 }
 
+function getAgeYears(dnascVal){
+  if(!dnascVal) return null;
+  const nasc=new Date(dnascVal),hoje=new Date();
+  return ((hoje-nasc)/(365.25*24*3600*1000));
+}
+
+function getCurrentValue(tipo){
+  const gv=id=>{ const el=document.getElementById(id); return el?parseFloat(el.value):NaN; };
+  const peso=gv('f-peso');
+  const alt=gv('f-alt');
+  const imc=gv('f-imc');
+  const pc=gv('f-pc');
+  if(tipo==='WFA_PCT'||tipo==='WFA_Z') return isNaN(peso)?null:peso;
+  if(tipo==='HFA_PCT'||tipo==='HFA_Z') return isNaN(alt)?null:alt;
+  if(tipo==='BMI_Z') return isNaN(imc)?null:imc;
+  if(tipo==='HCA_PCT'||tipo==='HCA_Z') return isNaN(pc)?null:pc;
+  return null;
+}
+function getCurrentValueRet(tipo){
+  const gv=id=>{ const el=document.getElementById(id); return el?parseFloat(el.value):NaN; };
+  const peso=gv('ret-peso');
+  const alt=gv('ret-alt');
+  const imc=gv('ret-imc');
+  const pc=gv('ret-pc');
+  if(tipo==='WFA_PCT'||tipo==='WFA_Z') return isNaN(peso)?null:peso;
+  if(tipo==='HFA_PCT'||tipo==='HFA_Z') return isNaN(alt)?null:alt;
+  if(tipo==='BMI_Z') return isNaN(imc)?null:imc;
+  if(tipo==='HCA_PCT'||tipo==='HCA_Z') return isNaN(pc)?null:pc;
+  return null;
+}
+
+function buildGrowthChart(canvasId, tipo, sexo, ageM, ageYrs, currentVal, prefixes){
+  const cfg_g = GROWTH_CONFIG[tipo];
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return null;
+
+  // For HFA: if age > 5 years, convert to years labels
+  let displayAge = ageM;
+  let isYears = false;
+  if((tipo==='HFA_PCT'||tipo==='HFA_Z') && ageM>60){
+    displayAge = ageYrs;
+    isYears = true;
+  }
+
+  const {ref, labels} = cfg_g.getData(sexo, ageM);
+  const isZ = cfg_g.isZ;
+
+  // Legend updates
+  const el_mid = document.getElementById(prefixes+'legend-mid');
+  const el_out = document.getElementById(prefixes+'legend-outer');
+  const el_inn = document.getElementById(prefixes+'legend-inner');
+  if(el_mid) el_mid.textContent = cfg_g.legendMid;
+  if(el_out) el_out.textContent = cfg_g.legendOuter;
+  if(el_inn) el_inn.textContent = cfg_g.legendInner;
+
+  // Title update
+  const tEl = document.getElementById(prefixes+'title');
+  const sEl = document.getElementById(prefixes+'subtitle');
+  if(tEl) tEl.textContent = '📊 '+cfg_g.label+' — OMS';
+  if(sEl) sEl.textContent = cfg_g.yLabel+' · Baseado nos padrões OMS';
+
+  // Build reference lines
+  let datasets = [];
+  if(isZ){
+    datasets = [
+      {label:'Z-3',data:ref.zm3,borderColor:'rgba(163,192,247,.7)',borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false,tension:.4},
+      {label:'Z-1',data:ref.zm1,borderColor:'rgba(255,160,64,.7)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:.4},
+      {label:'Z=0',data:ref.z0, borderColor:'#1F6FEB',borderWidth:2.5,pointRadius:0,fill:false,tension:.4},
+      {label:'Z+1',data:ref.zp1,borderColor:'rgba(255,160,64,.7)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:.4},
+      {label:'Z+3',data:ref.zp3,borderColor:'rgba(163,192,247,.7)',borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false,tension:.4},
+    ];
+  } else {
+    datasets = [
+      {label:'P3', data:ref.p3, borderColor:'rgba(163,192,247,.7)',borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false,tension:.4},
+      {label:'P15',data:ref.p15,borderColor:'rgba(255,160,64,.7)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:.4},
+      {label:'P50',data:ref.p50,borderColor:'#1F6FEB',borderWidth:2.5,pointRadius:0,fill:false,tension:.4},
+      {label:'P85',data:ref.p85,borderColor:'rgba(255,160,64,.7)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:.4},
+      {label:'P97',data:ref.p97,borderColor:'rgba(163,192,247,.7)',borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false,tension:.4},
+    ];
+  }
+
+  // Patient point
+  if(currentVal!=null && displayAge!=null){
+    const nearestLabel = labels.reduce((a,b)=>Math.abs(b-displayAge)<Math.abs(a-displayAge)?b:a);
+    datasets.push({
+      label:'Paciente',
+      data:labels.map(l=>l===nearestLabel?{x:l,y:currentVal}:null).filter(Boolean).map(p=>({x:p.x,y:p.y})),
+      borderColor:'#E54B4B',backgroundColor:'#E54B4B',
+      borderWidth:2,pointRadius:9,pointBorderColor:'white',pointBorderWidth:2.5,
+      showLine:false,tension:.4
+    });
+  }
+
+  const xLabelTxt = isYears ? 'Idade (anos)' : cfg_g.xLabel;
+  const chartCfg = {type:'line',data:{labels,datasets},options:{responsive:true,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.parsed.y||'').toFixed(1)+' '+cfg_g.unit}}},
+    scales:{x:{title:{display:true,text:xLabelTxt,font:{size:11}},grid:{color:'rgba(0,0,0,.05)'}},
+            y:{title:{display:true,text:cfg_g.yLabel,font:{size:11}},grid:{color:'rgba(0,0,0,.05)'}}}
+  }};
+
+  const chart = new Chart(canvas, chartCfg);
+
+  // Classify
+  const resEl = document.getElementById(prefixes+'result');
+  const refEl = document.getElementById(prefixes+'ref');
+  if(currentVal!=null && ageM!=null && resEl){
+    const nearestLabel = labels.reduce((a,b)=>Math.abs(b-displayAge)<Math.abs(a-displayAge)?b:a);
+    const idx = labels.indexOf(nearestLabel);
+    if(idx>=0){
+      const r = cfg_g.classify(currentVal, ref, idx);
+      const colors = {ok:'#178A4A',warn:'#C78A14',bad:'#C7362F'};
+      resEl.innerHTML=`<span style="font-weight:800;color:${colors[r.cl]}">${r.txt}</span><br><span style="font-size:11px">${r.ref50} &nbsp;|&nbsp; Atual: ${currentVal.toFixed(1)} ${cfg_g.unit}</span>`;
+    }
+  } else if(resEl) resEl.innerHTML='';
+
+  // Source reference
+  if(refEl){
+    const ref_txt = GROWTH_REFS[tipo]?.[sexo]||'';
+    refEl.innerHTML=ref_txt ? `📋 Referência: <a href="${cfg_g.srcUrl}" target="_blank" style="color:var(--blue);text-decoration:underline">${ref_txt}</a>` : '';
+  }
+
+  return chart;
+}
+
 function updateGrowthChart(){
   const canvas=document.getElementById('growthChart');
   if(!canvas) return;
+  const tipo=document.getElementById('growth-tipo')?.value||'WFA_PCT';
   const sexo=document.getElementById('growth-sexo').value;
-  const ref=WHO_M[sexo];
-  const labels=WHO_M.labels;
-  const peso=parseFloat(document.getElementById('f-peso').value);
   const ageM=getAgeMonths();
-  const patPts=WHO_M.labels.map((m,i)=>{
-    if(ageM!==null && m===WHO_M.labels.reduce((a,b)=>Math.abs(b-ageM)<Math.abs(a-ageM)?b:a) && !isNaN(peso))
-      return {x:m,y:peso};
-    return null;
-  }).filter(Boolean);
-
-  const datasets=[
-    {label:'P3',data:ref.p3,borderColor:'rgba(163,192,247,.7)',borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false,tension:.4},
-    {label:'P15',data:ref.p15,borderColor:'rgba(255,160,64,.7)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:.4},
-    {label:'P50',data:ref.p50,borderColor:'#1F6FEB',borderWidth:2.5,pointRadius:0,fill:false,tension:.4},
-    {label:'P85',data:ref.p85,borderColor:'rgba(255,160,64,.7)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:.4},
-    {label:'P97',data:ref.p97,borderColor:'rgba(163,192,247,.7)',borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false,tension:.4},
-    {label:'Paciente',data:patPts.map(p=>({x:p.x,y:p.y})),borderColor:'#E54B4B',backgroundColor:'#E54B4B',borderWidth:2,pointRadius:8,pointBorderColor:'white',pointBorderWidth:2,showLine:true,tension:.4}
-  ];
-
-  const cfg={type:'line',data:{labels,datasets},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)+' kg'}}},scales:{x:{title:{display:true,text:'Idade (meses)',font:{size:11}},grid:{color:'rgba(0,0,0,.05)'}},y:{title:{display:true,text:'Peso (kg)',font:{size:11}},grid:{color:'rgba(0,0,0,.05)'}}}}};
-
-  if(growthChart){growthChart.destroy();}
-  growthChart=new Chart(canvas,cfg);
-
-  // resultado
-  const res=document.getElementById('growth-result');
-  if(!isNaN(peso)&&ageM!==null&&res){
-    const idx=labels.indexOf(labels.reduce((a,b)=>Math.abs(b-ageM)<Math.abs(a-ageM)?b:a));
-    const p3=ref.p3[idx],p15=ref.p15[idx],p50=ref.p50[idx],p85=ref.p85[idx],p97=ref.p97[idx];
-    let classif='',color='';
-    if(peso<p3){classif='Abaixo do P3 — Baixo peso grave';color=var_r('red');}
-    else if(peso<p15){classif='Entre P3–P15 — Baixo peso';color=var_r('amber');}
-    else if(peso<=p85){classif='Entre P15–P85 — Peso adequado ✅';color=var_r('green');}
-    else if(peso<=p97){classif='Entre P85–P97 — Sobrepeso';color=var_r('amber');}
-    else{classif='Acima do P97 — Obesidade';color=var_r('red');}
-    res.innerHTML=`<span style="font-weight:800;color:${color}">Classificação: ${classif}</span><br><span style="font-size:11px">P50 para a idade: ${p50.toFixed(1)} kg &nbsp;|&nbsp; Peso atual: ${peso.toFixed(1)} kg</span>`;
-  }
+  const ageYrs=ageM?ageM/12:null;
+  const val=getCurrentValue(tipo);
+  if(growthChart){growthChart.destroy();growthChart=null;}
+  growthChart=buildGrowthChart('growthChart',tipo,sexo,ageM,ageYrs,val,'growth-');
 }
 
 function var_r(c){return c==='green'?'#178A4A':c==='amber'?'#C78A14':'#C7362F';}
