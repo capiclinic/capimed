@@ -7275,6 +7275,48 @@ async function renderAtividadesDetalhadas() {
 
 // ═══════════════════════════ PÁGINA DO MÉDICO ═══════════════════════════
 
+// ═══════════════════════════ MAPA ESTÁTICO COM PIN (OpenStreetMap) ═══════════════════════════
+// Geocodifica o endereço via Nominatim (OSM) e monta uma imagem estática de mapa
+// (staticmap.openstreetmap.de) com um marcador exatamente sobre o endereço, sem precisar de API key.
+const _mapaCache = {};
+async function geocodificarEndereco(addr) {
+  if (!addr) return null;
+  if (_mapaCache[addr]) return _mapaCache[addr];
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(addr);
+    const resp = await fetch(url, { headers: { 'Accept-Language':'pt-BR' } });
+    const data = await resp.json();
+    if (data && data[0]) {
+      const coords = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+      _mapaCache[addr] = coords;
+      return coords;
+    }
+  } catch(e) { /* sem internet ou serviço indisponível — cai no fallback */ }
+  return null;
+}
+
+function montarUrlMapaEstatico(lat, lon, zoom) {
+  zoom = zoom || 16;
+  // Serviço público de tiles estáticos do OpenStreetMap com marcador (sem necessidade de chave de API)
+  return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=${zoom}&size=600x260&maptype=mapnik&markers=${lat},${lon},red-pushpin`;
+}
+
+// Insere a imagem do mapa com pin assincronamente no elemento de destino,
+// já com a moldura/caixa em volta e o link para abrir no Google Maps.
+async function carregarMapaComPin(addr, imgElId) {
+  const img = document.getElementById(imgElId);
+  if (!img) return;
+  const coords = await geocodificarEndereco(addr);
+  if (coords) {
+    img.src = montarUrlMapaEstatico(coords.lat, coords.lon);
+    img.alt = 'Mapa de ' + addr;
+  } else {
+    // Fallback: se a geocodificação falhar (sem internet / endereço não localizado),
+    // mantém o iframe de busca do Google Maps como alternativa.
+    img.outerHTML = `<iframe src="https://maps.google.com/maps?q=${encodeURIComponent(addr)}&output=embed&z=16" width="100%" height="220" style="border:0;display:block" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+  }
+}
+
 function editarPaginaMedico() {
   const form = document.getElementById('pagina-edit-form');
   form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -7331,12 +7373,18 @@ async function renderPaginaMedico() {
   const email    = pagina.emailPub|| medDados.email  || '';
   const addr     = pagina.enderecoMapa || medDados.addr || '';
 
-  // Agenda: pegar próximos dias disponíveis
-  const agenda   = medDados.agenda || {};
+  // Agenda real: lê os próximos dias com horários cadastrados em capikids_agenda
+  const agendaRaw = JSON.parse(localStorage.getItem('capikids_agenda')||'{}');
+  const hojeStr = new Date().toISOString().slice(0,10);
   const diasSem  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const slotsDisp = Object.entries(agenda)
-    .filter(([,v]) => v && v.ativo && v.horas && v.horas.length)
-    .map(([dia, v]) => ({ dia: diasSem[parseInt(dia)]||dia, horas: v.horas }));
+  const slotsDisp = Object.entries(agendaRaw)
+    .filter(([data, horas]) => data >= hojeStr && horas && horas.length)
+    .sort(([a],[b]) => a.localeCompare(b))
+    .slice(0, 6)
+    .map(([data, horas]) => {
+      const d = new Date(data+'T00:00:00');
+      return { data, diaSemana: diasSem[d.getDay()], dataFmt: d.toLocaleDateString('pt-BR'), horas };
+    });
 
   // Mapa via Google Maps embed (sem API key, usa search URL)
   const mapUrl = addr
@@ -7417,19 +7465,19 @@ async function renderPaginaMedico() {
 
       <!-- Disponibilidade -->
       <div class="panel">
-        <div class="panel-head"><h2>📅 Disponibilidade</h2></div>
+        <div class="panel-head"><div><h2>📅 Agenda — Próximos horários</h2></div><button class="secondary" style="padding:6px 12px;font-size:11.5px" onclick="showMedSub('atend')">🗓 Gerenciar</button></div>
         ${slotsDisp.length ? `
         <div style="display:flex;flex-direction:column;gap:8px">
           ${slotsDisp.map(s => `
           <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--soft);border-radius:10px">
-            <div style="font-size:13px;font-weight:800;color:var(--navy);min-width:36px">${s.dia}</div>
+            <div style="font-size:12px;font-weight:800;color:var(--navy);min-width:84px">${s.diaSemana} ${s.dataFmt}</div>
             <div style="display:flex;gap:4px;flex-wrap:wrap">
               ${s.horas.slice(0,6).map(h => `<span style="background:white;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:12px;color:var(--blue);font-weight:700">${h}</span>`).join('')}
             </div>
           </div>`).join('')}
         </div>` : `
         <div style="color:var(--muted);font-size:13px;text-align:center;padding:12px">
-          Configure sua agenda na aba <b>📅 Agenda</b> para exibir os horários disponíveis.
+          Configure sua agenda na aba <b>🩺 Atendimento → 📅 Agenda</b> para exibir os próximos horários disponíveis.
         </div>`}
       </div>
 
@@ -7437,7 +7485,7 @@ async function renderPaginaMedico() {
       ${addr ? `
       <div class="panel" style="padding:0;overflow:hidden">
         <div style="padding:16px 20px 12px"><div style="font-size:15px;font-weight:900;color:var(--navy)">📍 Localização</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${addr}</div></div>
-        <iframe src="${mapUrl}" width="100%" height="220" style="border:0;display:block" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <img id="med-pagina-mapa-img" src="" alt="Carregando mapa…" style="width:100%;height:220px;object-fit:cover;display:block;background:var(--soft)">
         <div style="padding:10px 16px">
           <a href="https://maps.google.com/?q=${encodeURIComponent(addr)}" target="_blank"
              style="font-size:12px;color:var(--blue);font-weight:700;text-decoration:none">
@@ -7464,6 +7512,8 @@ async function renderPaginaMedico() {
 
     </div>
   </div>`;
+
+  if (addr) carregarMapaComPin(addr, 'med-pagina-mapa-img');
 }
 
 function verPreviewPagina() {
@@ -7486,11 +7536,17 @@ async function renderPreviewPaginaPaciente(crm) {
   const foto     = medDados.photo || '';
   const addr     = pagina.enderecoMapa || medDados.addr || '';
   const mapUrl   = addr ? `https://maps.google.com/maps?q=${encodeURIComponent(addr)}&output=embed&z=16` : '';
-  const agenda   = medDados.agenda || {};
+  const agendaRaw = JSON.parse(localStorage.getItem('capikids_agenda')||'{}');
+  const hojeStr  = new Date().toISOString().slice(0,10);
   const diasSem  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const slotsDisp = Object.entries(agenda)
-    .filter(([,v]) => v && v.ativo && v.horas && v.horas.length)
-    .map(([dia, v]) => ({ dia: diasSem[parseInt(dia)]||dia, horas: v.horas }));
+  const slotsDisp = Object.entries(agendaRaw)
+    .filter(([data, horas]) => data >= hojeStr && horas && horas.length)
+    .sort(([a],[b]) => a.localeCompare(b))
+    .slice(0, 6)
+    .map(([data, horas]) => {
+      const d = new Date(data+'T00:00:00');
+      return { data, diaSemana: diasSem[d.getDay()], dataFmt: d.toLocaleDateString('pt-BR'), horas };
+    });
 
   el.innerHTML = `
   <div style="background:linear-gradient(135deg,#0B1F3A,#1455C0);border-radius:16px;padding:28px;color:white;margin-bottom:16px">
@@ -7518,9 +7574,9 @@ async function renderPreviewPaginaPaciente(crm) {
     <div style="display:flex;flex-direction:column;gap:6px">
       ${slotsDisp.map(s => `
       <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--soft);border-radius:8px">
-        <div style="font-size:13px;font-weight:800;color:var(--navy);min-width:36px">${s.dia}</div>
+        <div style="font-size:12px;font-weight:800;color:var(--navy);min-width:84px">${s.diaSemana} ${s.dataFmt}</div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          ${s.horas.slice(0,8).map(h => `<span style="background:white;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:12px;color:var(--blue);font-weight:700;cursor:pointer" onclick="selecionarHorario('${crm}','${s.dia}','${h}')">${h}</span>`).join('')}
+          ${s.horas.slice(0,8).map(h => `<span style="background:white;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:12px;color:var(--blue);font-weight:700;cursor:pointer" onclick="selecionarHorario('${crm}','${s.dataFmt}','${h}')">${h}</span>`).join('')}
         </div>
       </div>`).join('')}
     </div>
@@ -7541,7 +7597,7 @@ async function renderPreviewPaginaPaciente(crm) {
   ${addr ? `
   <div style="background:white;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:12px">
     <div style="padding:14px 18px 10px"><div style="font-size:14px;font-weight:900;color:var(--navy)">📍 Localização</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${addr}</div></div>
-    <iframe src="${mapUrl}" width="100%" height="200" style="border:0;display:block" allowfullscreen loading="lazy"></iframe>
+    <img id="pac-preview-mapa-img" src="" alt="Carregando mapa…" style="width:100%;height:200px;object-fit:cover;display:block;background:var(--soft)">
     <div style="padding:8px 16px"><a href="https://maps.google.com/?q=${encodeURIComponent(addr)}" target="_blank" style="font-size:12px;color:var(--blue);font-weight:700;text-decoration:none">🗺 Abrir no Google Maps →</a></div>
   </div>` : ''}
 
@@ -7554,6 +7610,8 @@ async function renderPreviewPaginaPaciente(crm) {
     </button>
     ${pagina.telPub||medDados.tel ? `<div style="margin-top:10px"><a href="https://wa.me/55${((pagina.telPub||medDados.tel||'').replace(/\D/g,''))}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:white;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:800;text-decoration:none">📱 WhatsApp</a></div>` : ''}
   </div>`;
+
+  if (addr) carregarMapaComPin(addr, 'pac-preview-mapa-img');
 }
 
 
