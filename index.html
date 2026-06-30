@@ -1020,13 +1020,21 @@ button.export{background:var(--teal);color:white}
         <div class="field" style="margin-top:10px"><label>Medicamentos em uso</label><textarea id="f-meds" placeholder="Nome, dose, frequência, indicação."></textarea></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h2>💉 Vacinação (PNI)</h2></div>
+        <div class="panel-head"><h2>💉 Caderneta de Vacinação (Calendário PNI)</h2></div>
         <div class="pill-group">
           <label class="pill"><input type="radio" name="vac" value="em_dia"> ✅ Em dia</label>
           <label class="pill"><input type="radio" name="vac" value="incompleto"> ⚠️ Incompleto</label>
           <label class="pill"><input type="radio" name="vac" value="desatualizado"> ❌ Desatualizado</label>
           <label class="pill"><input type="radio" name="vac" value="ni"> ❓ Não informado</label>
         </div>
+
+        <div id="vac-caderneta" style="margin-top:14px;border:1px solid var(--line);border-radius:14px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:110px 1fr 130px;background:var(--soft);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:8px 12px">
+            <div>Idade</div><div>Vacina</div><div>Data aplicada</div>
+          </div>
+          <div id="vac-rows"></div>
+        </div>
+
         <div class="field" style="margin-top:10px"><label>Observações vacinação</label><textarea id="f-vacobs" placeholder="Vacinas em atraso, recusa, esquemas especiais…" style="min-height:52px"></textarea></div>
       </div>
       <div class="panel">
@@ -1491,6 +1499,9 @@ button.export{background:var(--teal);color:white}
             <select id="ret-vac"><option value="">—</option><option>Em dia</option><option>Incompleto</option><option>Desatualizado</option></select>
           </div>
         </div>
+        <button type="button" onclick="abrirCadernetaRetorno()" style="background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;color:var(--blue);cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:12px">
+          💉 Ver / Atualizar Caderneta Vacinal completa
+        </button>
         <div class="field" style="margin-bottom:10px">
           <label>Marcos do desenvolvimento observados nesta consulta</label>
           <textarea id="ret-dnpm" placeholder="Ex.: Sustento cefálico presente. Sorriso social. Balbucio. Sentando com apoio…" style="min-height:68px"></textarea>
@@ -1968,6 +1979,15 @@ button.export{background:var(--teal);color:white}
     <div class="panel">
       <div class="panel-head"><div><h2>🏥 Última Consulta</h2></div><span id="pac-last-date" class="chip chip-blue">—</span></div>
       <div id="pac-last-content"><div style="color:var(--muted);font-size:13px;padding:8px 0">Nenhuma consulta encontrada para este paciente.</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>💉 Caderneta de Vacinação</h2></div>
+      <div id="pac-caderneta-readonly" style="border:1px solid var(--line);border-radius:14px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:110px 1fr 130px;background:var(--soft);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:8px 12px">
+          <div>Idade</div><div>Vacina</div><div>Status</div>
+        </div>
+        <div id="pac-vac-rows"></div>
+      </div>
     </div>
     <div class="panel">
       <div class="panel-head"><h2>💊 Prescrições e Orientações</h2></div>
@@ -4118,6 +4138,7 @@ function goStep(n) {
   document.getElementById('stp'+n).classList.remove('done');
   document.getElementById('progress-fill').style.width = progWidths[n];
   window.scrollTo({top:0,behavior:'smooth'});
+  if (n===1) renderCadernetaVacinal('');
   if (n===2) setTimeout(updateGrowthChart, 100);
 }
 
@@ -4506,6 +4527,223 @@ const GROWTH_REFS = {
   HCA_Z:  {M:'OMS: Perímetro Cefálico (Meninos), 0-5 anos, em Escore Z. SBP/WHO 2006.',
             F:'OMS: Perímetro Cefálico (Meninas), 0-5 anos, em Escore Z. SBP/WHO 2006.'}
 };
+
+
+// ═══════════════════════════ CADERNETA DE VACINAÇÃO — CALENDÁRIO PNI ═══════════════════════════
+// Estrutura: cada item tem uma faixa etária de referência e a lista de vacinas daquela faixa.
+// Mnemônico ao nascer: "BeBê" = BCG + Hepatite B
+const VACCINE_SCHEDULE = [
+  { age:'Ao nascer', ageM:0, vacinas:[
+      'BCG',
+      'Hepatite B (recombinante)',
+      'Nirsevimabe (gestante/lactente — proteção RSV)'
+  ]},
+  { age:'2 meses', ageM:2, vacinas:[
+      'Pentavalente (DTP + Hib + HepB)',
+      'Rotavírus',
+      'Pneumocócica 10-valente (conjugada) ou 13',
+      'VIP (poliomielite 1, 2 e 3 — inativada)'
+  ]},
+  { age:'3 meses', ageM:3, vacinas:[
+      'Meningocócica C (conjugada) (ou ACWY e B)'
+  ]},
+  { age:'4 meses', ageM:4, vacinas:[
+      'Pentavalente (DTP + Hib + HepB)',
+      'Rotavírus',
+      'Pneumocócica 10-valente (conjugada) ou 13',
+      'VIP (poliomielite 1, 2 e 3 — inativada)'
+  ]},
+  { age:'5 meses', ageM:5, vacinas:[
+      'Meningocócica C (conjugada) (ou ACWY e B)'
+  ]},
+  { age:'6 meses', ageM:6, vacinas:[
+      'VIP (poliomielite 1, 2 e 3 — inativada)',
+      'Pentavalente (DTP + Hib + HepB)',
+      'Pneumocócica 10 ou 13',
+      'Influenza (trivalente ou quadrivalente)'
+  ]},
+  { age:'7 meses', ageM:7, vacinas:[
+      'Influenza (trivalente ou quadrivalente)'
+  ]},
+  { age:'9 meses', ageM:9, vacinas:[
+      'Febre Amarela (FA)'
+  ]},
+  { age:'12 meses', ageM:12, vacinas:[
+      'SCRVa (tríplice/tetra viral componente varicela)',
+      'Pneumocócica 10-valente (ou 13)',
+      'Meningocócica C (ou ACWY e B)'
+  ]},
+  { age:'15 meses', ageM:15, vacinas:[
+      'Hepatite A (inativada)',
+      'VOPb (polio 1 e 3 atenuada)',
+      'DTP',
+      'Tetraviral (SCR + varicela)'
+  ]},
+  { age:'4 anos', ageM:48, vacinas:[
+      'DTP',
+      'VOPb (polio 1 e 3 atenuada)',
+      'Febre Amarela (atenuada)',
+      'Varicela (monovalente)'
+  ]},
+  { age:'5 anos', ageM:60, vacinas:[
+      'Febre amarela (atenuada) — 1 dose',
+      'Pneumocócica 23-valente — 2 doses'
+  ]},
+  { age:'7 anos', ageM:84, vacinas:[
+      'Difteria e tétano (dT) — 3 doses'
+  ]},
+  { age:'Adolescente', ageM:132, vacinas:[
+      'HPV: 9-19 anos (meninos e meninas) — dose única',
+      'Meningocócica ACWY: 11-14 anos — 1 dose'
+  ]},
+  { age:'Anualmente', ageM:-1, vacinas:[
+      'INFLUENZA (trivalente ou quadrivalente)'
+  ]}
+];
+
+// Gera uma chave única por dose/vacina, baseada na faixa etária + índice
+function vacKey(rowIdx, vacIdx){ return 'vac_'+rowIdx+'_'+vacIdx; }
+
+// Renderiza a tabela de caderneta vacinal dentro de #vac-rows
+function renderCadernetaVacinal(prefix){
+  prefix = prefix || '';
+  const el = document.getElementById(prefix+'vac-rows');
+  if(!el) return;
+  let html = '';
+  VACCINE_SCHEDULE.forEach((row, rowIdx)=>{
+    row.vacinas.forEach((vac, vacIdx)=>{
+      const key = vacKey(rowIdx, vacIdx);
+      const isFirst = vacIdx===0;
+      html += `<div style="display:grid;grid-template-columns:110px 1fr 130px;align-items:center;padding:6px 12px;border-top:1px solid var(--line);font-size:12.5px;${isFirst?'background:rgba(31,111,235,.04)':''}">
+        <div style="font-weight:${isFirst?'800':'400'};color:${isFirst?'var(--navy)':'var(--muted)'}">${isFirst?row.age:''}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="${prefix}${key}_chk" style="width:15px;height:15px;cursor:pointer">
+          <label for="${prefix}${key}_chk" style="cursor:pointer;line-height:1.3">${vac}</label>
+        </div>
+        <div><input type="date" id="${prefix}${key}_date" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:11px;font-family:'DM Sans',sans-serif"></div>
+      </div>`;
+    });
+  });
+  el.innerHTML = html;
+}
+
+// Calcula status geral da vacinação com base na idade do paciente e nas doses marcadas
+function calcVacStatus(prefix){
+  prefix = prefix || '';
+  const ageM = getAgeMonths ? getAgeMonths() : null;
+  if(ageM===null) return null;
+  let totalEsperadas = 0, totalAplicadas = 0, atrasadas = [];
+  VACCINE_SCHEDULE.forEach((row, rowIdx)=>{
+    if(row.ageM < 0) return; // pula "Anualmente" do cálculo de atraso
+    if(row.ageM <= ageM){
+      row.vacinas.forEach((vac, vacIdx)=>{
+        totalEsperadas++;
+        const chk = document.getElementById(prefix+vacKey(rowIdx,vacIdx)+'_chk');
+        if(chk && chk.checked){ totalAplicadas++; }
+        else { atrasadas.push(row.age+': '+vac); }
+      });
+    }
+  });
+  return { totalEsperadas, totalAplicadas, atrasadas };
+}
+
+// Coleta os dados da caderneta para salvar (formato JSON simples: {key: {checked, date}})
+function coletarCaderneta(prefix){
+  prefix = prefix || '';
+  const data = {};
+  VACCINE_SCHEDULE.forEach((row, rowIdx)=>{
+    row.vacinas.forEach((vac, vacIdx)=>{
+      const key = vacKey(rowIdx, vacIdx);
+      const chk = document.getElementById(prefix+key+'_chk');
+      const date = document.getElementById(prefix+key+'_date');
+      if(chk && (chk.checked || (date && date.value))){
+        data[key] = { vacina:vac, idade:row.age, aplicada:chk.checked, data:date?date.value:'' };
+      }
+    });
+  });
+  return data;
+}
+
+// Preenche a caderneta a partir de dados salvos anteriormente
+function preencherCaderneta(prefix, data){
+  prefix = prefix || '';
+  if(!data) return;
+  Object.keys(data).forEach(key=>{
+    const chk = document.getElementById(prefix+key+'_chk');
+    const date = document.getElementById(prefix+key+'_date');
+    if(chk) chk.checked = !!data[key].aplicada;
+    if(date && data[key].data) date.value = data[key].data;
+  });
+}
+
+// Modal simples para abrir a caderneta durante o retorno (reaproveita a mesma estrutura)
+function abrirCadernetaRetorno(){
+  let modal = document.getElementById('modal-caderneta-ret');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'modal-caderneta-ret';
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = `
+      <div style="background:var(--card);border-radius:18px;max-width:720px;width:100%;max-height:85vh;overflow-y:auto;padding:22px;box-shadow:var(--shadow)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h2 style="margin:0">💉 Caderneta de Vacinação</h2>
+          <button onclick="document.getElementById('modal-caderneta-ret').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+        </div>
+        <div id="ret-vac-caderneta" style="border:1px solid var(--line);border-radius:14px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:110px 1fr 130px;background:var(--soft);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:8px 12px">
+            <div>Idade</div><div>Vacina</div><div>Data aplicada</div>
+          </div>
+          <div id="retmodal-vac-rows"></div>
+        </div>
+        <div style="margin-top:14px;display:flex;justify-content:flex-end">
+          <button onclick="document.getElementById('modal-caderneta-ret').remove()" style="background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:0;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif">Concluir</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    renderCadernetaVacinal('retmodal-');
+    // Pré-carrega dados existentes do paciente, se houver
+    if(typeof retPacienteSelecionado !== 'undefined' && retPacienteSelecionado && retPacienteSelecionado.caderneta_vacinal){
+      preencherCaderneta('retmodal-', retPacienteSelecionado.caderneta_vacinal);
+    }
+  }
+}
+
+// Renderiza a caderneta de vacinação em modo somente-leitura para a Área do Paciente,
+// usando os dados salvos pelo médico e a data de nascimento para calcular atraso.
+function renderCadernetaReadOnly(consultaData, dnascVal){
+  const el = document.getElementById('pac-vac-rows');
+  if(!el) return;
+  let saved = {};
+  if(consultaData && consultaData.caderneta_vacinal){
+    try{ saved = JSON.parse(consultaData.caderneta_vacinal); }catch(e){ saved = {}; }
+  }
+  const ageM = getAgeYears ? (getAgeYears(dnascVal)!==null ? getAgeYears(dnascVal)*12 : null) : null;
+  let html = '';
+  VACCINE_SCHEDULE.forEach((row, rowIdx)=>{
+    row.vacinas.forEach((vac, vacIdx)=>{
+      const key = vacKey(rowIdx, vacIdx);
+      const isFirst = vacIdx===0;
+      const info = saved[key];
+      const applied = info && info.aplicada;
+      const dueAlready = (row.ageM>=0 && ageM!==null && row.ageM<=ageM);
+      let statusHtml;
+      if(applied){
+        statusHtml = `<span style="color:#178A4A;font-weight:800;font-size:11.5px">✅ ${info.data?fmtDate(info.data):'Aplicada'}</span>`;
+      } else if(dueAlready){
+        statusHtml = `<span style="color:#C7362F;font-weight:800;font-size:11.5px">⚠️ Pendente</span>`;
+      } else {
+        statusHtml = `<span style="color:var(--muted);font-size:11.5px">— Aguardando</span>`;
+      }
+      html += `<div style="display:grid;grid-template-columns:110px 1fr 130px;align-items:center;padding:6px 12px;border-top:1px solid var(--line);font-size:12.5px;${isFirst?'background:rgba(31,111,235,.04)':''}">
+        <div style="font-weight:${isFirst?'800':'400'};color:${isFirst?'var(--navy)':'var(--muted)'}">${isFirst?row.age:''}</div>
+        <div>${vac}</div>
+        <div>${statusHtml}</div>
+      </div>`;
+    });
+  });
+  el.innerHTML = html;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function getAgeMonths(){
@@ -5125,6 +5363,10 @@ function preencherPacienteExistente(nome) {
   setFv('f-aleit', ult.aleitamento);
   setFv('f-mor', ult.moradia); setFv('f-san', ult.saneamento);
   setFv('f-anim', ult.animais); setFv('f-esc', ult.escola);
+  renderCadernetaVacinal('');
+  if (ult.caderneta_vacinal){
+    try{ preencherCaderneta('', JSON.parse(ult.caderneta_vacinal)); }catch(e){}
+  }
 
   calcIdade(); updatePatCard();
   document.getElementById('f-dtcons').value = new Date().toISOString().slice(0,10);
@@ -5329,7 +5571,7 @@ function coletarDados(){
     medico:fv('f-med'), convenio:fv('f-conv'), crm:fv('f-crm'), rqe:fv('f-rqe'),
     qp:fv('f-qp'),hma:fv('f-hma'),antec_perinat:fv('f-peri'),dnpm:fv('f-dnpm'),
     doencas_prev:fv('f-dprev'),alergias:fv('f-alerg'),medicamentos:fv('f-meds'),
-    vacinacao:vac,vac_obs:fv('f-vacobs'),aleitamento:fv('f-aleit'),alimentacao:fv('f-alim'),
+    vacinacao:vac,vac_obs:fv('f-vacobs'),caderneta_vacinal:JSON.stringify(coletarCaderneta('')),aleitamento:fv('f-aleit'),alimentacao:fv('f-alim'),
     antec_fam:fv('f-afam'),moradia:fv('f-mor'),saneamento:fv('f-san'),animais:fv('f-anim'),escola:fv('f-esc'),
     peso:fv('f-peso'),altura:fv('f-alt'),pc:fv('f-pc'),imc:fv('f-imc'),
     temp:fv('f-temp'),spo2:fv('f-spo2'),fc:fv('f-fc'),fr:fv('f-fr'),pa:fv('f-pa'),gli:fv('f-gli'),
@@ -5709,6 +5951,9 @@ async function loadPacData(){
     if(last.exames_sol) pend.push('📋 Exames solicitados: '+last.exames_sol);
     if(last.encaminhamentos) pend.push('🔁 Encaminhamento: '+last.encaminhamentos);
     document.getElementById('pac-pendencias').innerHTML=pend.length?pend.map(p=>`<div style="background:var(--soft);border-radius:10px;padding:10px 14px;margin-bottom:6px;font-size:13px">${p}</div>`).join(''):'<div style="color:var(--muted);font-size:13px">Sem pendências.</div>';
+
+    // Caderneta de vacinação (somente leitura)
+    renderCadernetaReadOnly(last, last.dnasc);
   }
 
   // arquivos extras
