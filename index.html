@@ -1994,6 +1994,16 @@ button.export{background:var(--teal);color:white}
 <!-- ════════════════════ PACIENTE (PAINEL) ════════════════════ -->
 <section id="pacientes" class="page">
 
+  <!-- Banner: modo administrador visualizando a área do paciente -->
+  <div id="admin-pac-banner" style="display:none;background:linear-gradient(135deg,#143B68,#1455C0);color:white;border-radius:14px;padding:12px 16px;margin-bottom:16px;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:20px">🛡️</span>
+    <div style="flex:1;min-width:160px">
+      <div style="font-size:13.5px;font-weight:900">Modo administrador</div>
+      <div style="font-size:12px;opacity:.85">Visualizando a área de <b id="admin-pac-banner-nome">—</b> · acesso somente leitura</div>
+    </div>
+    <button onclick="adminSairAreaPaciente()" style="background:rgba(255,255,255,.18);border:none;border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:800;color:white;cursor:pointer;font-family:'DM Sans',sans-serif">← Voltar à Área do Médico</button>
+  </div>
+
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
     <button class="step-btn active" id="psub0" onclick="showPacSub(0)">🏥 Minha Saúde</button>
     <button class="step-btn" id="psub1" onclick="showPacSub(1)">📈 Crescimento</button>
@@ -2003,7 +2013,7 @@ button.export{background:var(--teal);color:white}
     <button class="step-btn" id="psub4" onclick="showPacSub(4)">🦫 Capivara Virtual</button>
     <div style="margin-left:auto;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:8px">
       <span id="pac-logged-name" style="font-weight:700;color:var(--navy)"></span>
-      <button class="secondary" style="padding:6px 12px;font-size:12px" onclick="logout('pac')">Sair</button>
+      <button id="pac-logout-btn" class="secondary" style="padding:6px 12px;font-size:12px" onclick="logout('pac')">Sair</button>
     </div>
   </div>
 
@@ -2858,6 +2868,7 @@ function loadChatLocal() {}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script>
 
@@ -2902,6 +2913,67 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const storage = firebase.storage();
+const auth = firebase.auth();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+
+// App secundário: usado para CRIAR contas sem deslogar quem está na sessão atual
+let _secondaryApp = null;
+function getSecondaryAuth() {
+  if (!_secondaryApp) _secondaryApp = firebase.initializeApp(firebaseConfig, 'secondary');
+  return _secondaryApp.auth();
+}
+
+// ══════════════════════ CAMADA DE AUTENTICAÇÃO ══════════════════════
+// E-mails sintéticos (fallback para contas sem e-mail real, ex.: admins)
+function emailMedSintetico(crm) { return String(crm).toLowerCase() + '@med.capiclinic.app'; }
+function emailPacSintetico(id)  { return String(id).toLowerCase()  + '@pac.capiclinic.app'; }
+
+// Resolve o e-mail de login (real, via índice público) a partir de CRM/ID
+async function resolverEmailLogin(tipo, chave) {
+  try {
+    const real = await DB.get('loginIndex/' + tipo + '/' + chave);
+    if (real) return real;
+  } catch(e) {}
+  return tipo === 'med' ? emailMedSintetico(chave) : emailPacSintetico(chave);
+}
+
+// Cria conta no app secundário (não afeta a sessão atual). Retorna uid ou null.
+// escreverFn(uid, sdb) opcional: executa gravações autenticado como a nova conta
+// (necessário em auto-cadastros, quando a sessão primária está deslogada).
+async function criarContaAuthSecundaria(email, senha, escreverFn) {
+  const sAuth = getSecondaryAuth();
+  try {
+    const cred = await sAuth.createUserWithEmailAndPassword(email, senha);
+    const uid = cred.user.uid;
+    if (escreverFn) {
+      try { await escreverFn(uid, _secondaryApp.database()); }
+      catch(e) { console.warn('Escrita (secundária) falhou:', e.message); }
+    }
+    await sAuth.signOut();
+    return uid;
+  } catch(e) {
+    if (e.code === 'auth/email-already-in-use') return 'existente';
+    console.warn('Auth (secundária) falhou:', e.code || e.message);
+    return null;
+  }
+}
+
+// Registra índices necessários para as regras/segurança
+async function registrarIndiceLogin(tipo, chave, email) {
+  try { await DB.set('loginIndex/' + tipo + '/' + chave, email); } catch(e) {}
+}
+async function registrarMedUid(uid, crm) {
+  if (!uid || !crm) return;
+  try { await DB.set('medUidToCrm/' + uid, crm); } catch(e) {}
+}
+
+// Verifica se já existe conta de Auth para um e-mail
+async function authContaExiste(email) {
+  try {
+    const metodos = await auth.fetchSignInMethodsForEmail(email);
+    return metodos && metodos.length > 0;
+  } catch(e) { return false; }
+}
 
 // ══ EMAILJS CONFIG ══
 const EMAILJS_SERVICE  = 'service_m597538';
@@ -3005,6 +3077,7 @@ const PAC_PASS_PADRAO = 'capikids123';
 
 // ══ ESTADO ══
 let loggedMed = false, medCRM = '', loggedPac = false, pacName = '', pacId = '';
+let adminViewPac = false; // admin (médico) visualizando a área do paciente
 let currentStep = 0, currentMedSub = 'perfil', currentPacSub = 0;
 let cidCount = 0, rxCount = 0;
 let growthChart = null, growthChartPac = null;
@@ -3029,6 +3102,10 @@ function clearSession() {
 function getSavedSession() {
   return sessionStorage.getItem(KEY_MED_SESSION) || localStorage.getItem(KEY_MED_SESSION);
 }
+// Sessão (papel + chave) para restaurar automaticamente via Firebase Auth
+const KEY_SESS_ROLE = 'capiclinic_sess';
+function lembrarSessao(role, key) { try { localStorage.setItem(KEY_SESS_ROLE, JSON.stringify({role, key})); } catch(e) {} }
+function esquecerSessao() { try { localStorage.removeItem(KEY_SESS_ROLE); } catch(e) {} }
 
 // ═══════════════════════════ RASCUNHO (autossalvamento) ═══════════════════
 const DRAFT_FIELDS = [
@@ -3186,8 +3263,15 @@ function goMedico(btn) {
   else showPage('login-med', btn);
 }
 function goPaciente(btn) {
-  if (loggedPac) showPage('pacientes', btn);
-  else showPage('login-pac', btn);
+  if (loggedPac) { showPage('pacientes', btn); return; }
+  // Admins acessam a área do paciente escolhendo na lista (sem login de paciente)
+  if (loggedMed && ADMIN_CRMS.includes(medCRM)) {
+    showPage('medicos', document.getElementById('tab-med'));
+    showMedSub('admin');
+    toast('Selecione um paciente na lista para acessar a área dele. 👁', 'info');
+    return;
+  }
+  showPage('login-pac', btn);
 }
 
 // ═══════════════════════════ LOGIN ═══════════════════════════
@@ -3197,39 +3281,76 @@ async function doLoginMed() {
   const err = document.getElementById('loginMedErr');
   err.style.display = 'none';
 
-  // 1. Verifica senha no Firebase (permite senha alterada)
-  try {
-    const dadosMed = await DB.get('medicos/' + u);
-    if (dadosMed && dadosMed.status === 'pendente') {
-      err.textContent = 'Seu cadastro ainda está aguardando aprovação do administrador.';
-      err.style.display = 'block'; return;
-    }
-    if (dadosMed && dadosMed.senhaMed) {
-      if (dadosMed.senhaMed === p) {
-        MED_USERS[u] = p; // sincroniza em memória
-        _activateMedSession(u);
-        toast('Bem-vindo, ' + (MED_NAMES[u]||u).split(' ').slice(0,2).join(' ') + '!', 'ok');
-        // Se senha provisória: forçar troca
-        if (dadosMed.senhaProvisoria) {
-          setTimeout(() => abrirTrocaSenhaMed(u, dadosMed), 600);
-        }
-        return;
-      } else { err.style.display = 'block'; return; }
-    }
-  } catch(e) { /* fallback abaixo */ }
-
-  // 2. Fallback: senha hardcoded (MED_USERS)
-  if (MED_USERS[u] && MED_USERS[u] === p) {
-    _activateMedSession(u);
-    toast('Bem-vindo, ' + MED_NAMES[u].split(' ').slice(0, 2).join(' ') + '!', 'ok');
-  } else {
-    err.style.display = 'block';
+  let dadosMed = null;
+  try { dadosMed = await DB.get('medicos/' + u); } catch(e) {}
+  if (dadosMed && dadosMed.status === 'pendente') {
+    err.textContent = 'Seu cadastro ainda está aguardando aprovação do administrador.';
+    err.style.display = 'block'; return;
   }
+  if (dadosMed && dadosMed.status === 'rejeitado') {
+    err.textContent = 'Este cadastro não foi aprovado. Fale com a administração.';
+    err.style.display = 'block'; return;
+  }
+
+  const emailSint = emailMedSintetico(u);
+  let emailIdx = null;
+  try { emailIdx = await DB.get('loginIndex/med/' + u); } catch(e) {}
+  const candidatos = [...new Set([emailIdx, emailSint].filter(Boolean))];
+
+  const finalizar = async () => {
+    let st = dadosMed && dadosMed.status;
+    try { st = await DB.get('medicos/' + u + '/status'); } catch(e) {}
+    if (st === 'pendente')  { await auth.signOut(); err.textContent = 'Seu cadastro ainda está aguardando aprovação do administrador.'; err.style.display = 'block'; return false; }
+    if (st === 'rejeitado') { await auth.signOut(); err.textContent = 'Este cadastro não foi aprovado. Fale com a administração.'; err.style.display = 'block'; return false; }
+    _activateMedSession(u);
+    toast('Bem-vindo, ' + (MED_NAMES[u]||u).split(' ').slice(0,2).join(' ') + '!', 'ok');
+    if (dadosMed && dadosMed.senhaProvisoria) setTimeout(() => abrirTrocaSenhaMed(u, dadosMed), 600);
+    return true;
+  };
+
+  // 1) Tenta autenticar com os e-mails conhecidos
+  for (const em of candidatos) {
+    try { await auth.signInWithEmailAndPassword(em, p); await finalizar(); return; }
+    catch(e) { /* tenta o próximo / migração */ }
+  }
+
+  // 2) Migração: cria a conta de Auth se a senha legada conferir
+  const legacyOk = (dadosMed && dadosMed.senhaMed && dadosMed.senhaMed === p) ||
+                   (MED_USERS[u] && MED_USERS[u] === p);
+  const emailReal = (dadosMed && dadosMed.email && dadosMed.email.includes('@'))
+    ? dadosMed.email.trim().toLowerCase() : emailSint;
+
+  if (legacyOk) {
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(emailReal, p);
+      await registrarIndiceLogin('med', u, emailReal);
+      await registrarMedUid(cred.user.uid, u);
+      try { await DB.set('medicos/' + u + '/authUid', cred.user.uid); } catch(e) {}
+      try { await DB.set('medicos/' + u + '/senhaMed', null); } catch(e) {}
+      await finalizar();
+      return;
+    } catch(e) {
+      // Conta já existe (senha atual difere da legada): tenta autenticar com o e-mail real
+      if (e.code === 'auth/email-already-in-use') {
+        try { await auth.signInWithEmailAndPassword(emailReal, p); await finalizar(); return; } catch(e2) {}
+      }
+    }
+  }
+
+  err.textContent = 'Usuário ou senha incorretos.';
+  err.style.display = 'block';
 }
 
 function _activateMedSession(u) {
   loggedMed = true; medCRM = u;
   saveSession(u);
+  lembrarSessao('med', u);
+  // Segurança: registra mapeamento uid→CRM e authUid (necessário para as regras)
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if (uid) {
+    registrarMedUid(uid, u);
+    DB.get('medicos/' + u + '/authUid').then(a => { if (!a) DB.set('medicos/' + u + '/authUid', uid); }).catch(()=>{});
+  }
   document.getElementById('med-logged-name').textContent = MED_NAMES[u];
   setTimeout(renderAtividadesMed, 600);
   document.getElementById('f-crm').value = u;
@@ -3260,30 +3381,56 @@ async function doLoginPac() {
   const u   = document.getElementById('lpUser').value.trim().toUpperCase();
   const p   = document.getElementById('lpPass').value.trim();
   const err = document.getElementById('loginPacErr');
+  err.style.display = 'none';
 
-  // 1. Buscar por ID no Firebase
-  const pacFirebase = await DB.get('pacientes/' + u);
-  if (pacFirebase && pacFirebase.senha === p) {
-    loggedPac = true; pacName = pacFirebase.nome; pacId = u;
-    err.style.display = 'none';
-    document.getElementById('pac-logged-name').textContent = pacFirebase.nome;
+  let pacFirebase = null;
+  try { pacFirebase = await DB.get('pacientes/' + u); } catch(e) {}
+
+  const emailSint = emailPacSintetico(u);
+  let emailIdx = null;
+  try { emailIdx = await DB.get('loginIndex/pac/' + u); } catch(e) {}
+  const candidatos = [...new Set([emailIdx, emailSint].filter(Boolean))];
+
+  const finalizarPac = () => {
+    loggedPac = true; pacName = (pacFirebase && pacFirebase.nome) || u; pacId = u;
+    lembrarSessao('pac', u);
+    document.getElementById('pac-logged-name').textContent = pacName;
     showPage('pacientes', document.getElementById('tab-pac'));
     loadPacData(); initGrowthChartPac();
-    toast('Bem-vindo, ' + pacFirebase.nome + '! 🦫', 'ok');
-    // Se senha provisória: forçar troca
-    if (pacFirebase.senhaProvisoria) {
-      setTimeout(() => abrirTrocaSenhaPac(u, pacFirebase.nome), 600);
-    }
-    return;
+    toast('Bem-vindo, ' + pacName + '! 🦫', 'ok');
+    if (pacFirebase && pacFirebase.senhaProvisoria) setTimeout(() => abrirTrocaSenhaPac(u, pacName), 600);
+  };
+
+  // 1) Tenta autenticar com os e-mails conhecidos
+  for (const em of candidatos) {
+    try { await auth.signInWithEmailAndPassword(em, p); finalizarPac(); return; }
+    catch(e) { /* tenta próximo / migração */ }
   }
 
-  // 2. Compatibilidade com logins legados
+  // 2) Migração de conta legada (senha em texto) para o Auth
+  if (pacFirebase && pacFirebase.senha && pacFirebase.senha === p) {
+    const emailReal = (pacFirebase.email_conta && pacFirebase.email_conta.includes('@'))
+      ? pacFirebase.email_conta.trim().toLowerCase() : emailSint;
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(emailReal, p);
+      await registrarIndiceLogin('pac', u, emailReal);
+      try { await DB.set('pacientes/' + u + '/authUid', cred.user.uid); } catch(e) {}
+      try { await DB.set('pacientes/' + u + '/senha', null); } catch(e) {}
+      finalizarPac();
+      return;
+    } catch(e) {
+      if (e.code === 'auth/email-already-in-use') {
+        try { await auth.signInWithEmailAndPassword(emailReal, p); finalizarPac(); return; } catch(e2) {}
+      }
+    }
+  }
+
+  // Compatibilidade com logins legados por usuário (sem ID) — apenas com regras abertas
   const uLeg = document.getElementById('lpUser').value.trim();
   const legacy = PAC_USERS[uLeg];
-  const senhaLeg = legacy ? legacy.senha === p : p === PAC_PASS_PADRAO;
-  if (uLeg.length > 0 && senhaLeg) {
-    loggedPac = true; pacName = legacy ? legacy.nome : uLeg; pacId = '';
-    err.style.display = 'none';
+  const senhaLeg = legacy ? legacy.senha === p : false;
+  if (uLeg.length > 0 && senhaLeg && legacy) {
+    loggedPac = true; pacName = legacy.nome; pacId = '';
     document.getElementById('pac-logged-name').textContent = pacName;
     showPage('pacientes', document.getElementById('tab-pac'));
     loadPacData(); initGrowthChartPac();
@@ -3302,7 +3449,12 @@ function logout(role) {
       clearDraft();
     }
     clearSession();
+    esquecerSessao();
     loggedMed = false; medCRM = '';
+    adminViewPac = false; loggedPac = false; pacId = ''; pacName = '';
+    try { auth.signOut(); } catch(e) {}
+    const apb = document.getElementById('admin-pac-banner');
+    if (apb) apb.style.display = 'none';
     chatOpen = false;
     const chatBtn = document.getElementById('chat-btn');
     if (chatBtn) chatBtn.style.display = 'none';
@@ -3311,7 +3463,15 @@ function logout(role) {
     showPage('home', document.querySelectorAll('.tab')[0]);
     document.querySelectorAll('.tab')[0].classList.add('active');
   } else {
+    // Se for um admin visualizando a área do paciente, não desloga o médico
+    const eraAdminView = adminViewPac;
     loggedPac = false; pacName = '';
+    adminViewPac = false;
+    if (!eraAdminView) { try { auth.signOut(); } catch(e) {} esquecerSessao(); }
+    const banner = document.getElementById('admin-pac-banner');
+    if (banner) banner.style.display = 'none';
+    const btnSairPac = document.getElementById('pac-logout-btn');
+    if (btnSairPac) btnSairPac.style.display = '';
     showPage('home', document.querySelectorAll('.tab')[0]);
     document.querySelectorAll('.tab')[0].classList.add('active');
   }
@@ -3342,6 +3502,50 @@ function showMedSub(n) {
 function configurarAbasAdmin(crm) {
   const btnAdmin = document.getElementById('msub-admin');
   if (btnAdmin) btnAdmin.style.display = ADMIN_CRMS.includes(crm) ? 'flex' : 'none';
+}
+
+// ── Admin: acessar a Área do Paciente sem precisar logar como paciente ──
+function adminAbrirAreaPaciente(pid, nome) {
+  if (!loggedMed || !ADMIN_CRMS.includes(medCRM)) {
+    toast('Acesso restrito a administradores.', 'err');
+    return;
+  }
+  adminViewPac = true;
+  loggedPac = true;
+  pacId = pid;
+  pacName = nome || pid;
+
+  const lbl = document.getElementById('pac-logged-name');
+  if (lbl) lbl.textContent = pacName;
+  const banner = document.getElementById('admin-pac-banner');
+  if (banner) {
+    banner.style.display = 'flex';
+    const bn = document.getElementById('admin-pac-banner-nome');
+    if (bn) bn.textContent = pacName;
+  }
+  // Oculta o botão "Sair" comum (usamos o "Voltar à Área do Médico" no banner)
+  const btnSairPac = document.getElementById('pac-logout-btn');
+  if (btnSairPac) btnSairPac.style.display = 'none';
+
+  showPage('pacientes', document.getElementById('tab-pac'));
+  loadPacData();
+  initGrowthChartPac();
+  loadPacCal();
+  showPacSub(0);
+  toast('🛡️ Visualizando a área de ' + pacName, 'info');
+}
+
+function adminSairAreaPaciente() {
+  adminViewPac = false;
+  loggedPac = false;
+  pacId = '';
+  pacName = '';
+  const banner = document.getElementById('admin-pac-banner');
+  if (banner) banner.style.display = 'none';
+  const btnSairPac = document.getElementById('pac-logout-btn');
+  if (btnSairPac) btnSairPac.style.display = '';
+  showPage('medicos', document.getElementById('tab-med'));
+  showMedSub('admin');
 }
 
 // ── Gerar ID único para médico: MED + 6 chars ──
@@ -3376,7 +3580,6 @@ async function aprovarMedico(crm) {
   if (!med) return;
   await DB.set('medicos/' + crm + '/status', 'ativo');
   MED_NAMES[crm] = med.nome + ' (CRM-' + (med.uf||'SP') + ' ' + crm + ')';
-  MED_USERS[crm] = med.senhaMed;
   toast('✅ Dr(a). ' + med.nome + ' aprovado com sucesso!', 'ok');
   renderMedicosPendentes(); renderAdminMedicos();
 }
@@ -3421,10 +3624,13 @@ async function renderAdminPacientes(filtro) {
         <th style="text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:900">Contato</th>
         <th style="text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:900">Senha inicial</th>
         <th style="text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:900">Cadastrado em</th>
+        <th style="text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:900">Ações</th>
       </tr>
     </thead>
     <tbody>
-      ${lista.map(([id,p],i) => `
+      ${lista.map(([id,p],i) => {
+        const nomeSafe = (p.nome||'').replace(/\\/g,'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+        return `
         <tr style="border-bottom:1px solid var(--line);background:${i%2?'var(--soft)':'white'}">
           <td style="padding:10px 12px">
             <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:900;color:var(--blue);background:#EAF2FF;border-radius:6px;padding:3px 8px">${id}</span>
@@ -3437,7 +3643,10 @@ async function renderAdminPacientes(filtro) {
             <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--muted)">${p.senha||'—'}</span>
           </td>
           <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${fmtDate(p.criadoEm||p.criadoem||'')}</td>
-        </tr>`).join('')}
+          <td style="padding:10px 12px">
+            <button onclick="adminAbrirAreaPaciente('${id}','${nomeSafe}')" style="background:linear-gradient(135deg,var(--blue),#1455C0);color:white;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">👁 Área do paciente</button>
+          </td>
+        </tr>`;}).join('')}
     </tbody>
   </table>`;
 }
@@ -3566,6 +3775,7 @@ async function criarContaPaciente() {
 
   const senhaProvisoria = 'Capi' + Math.random().toString(36).slice(2,7).toUpperCase();
 
+  // Dados base do paciente
   const novoPac = {
     id: novoId,
     nome: pacNome, dnasc: pacNasc, sexo: pacSexo,
@@ -3573,15 +3783,32 @@ async function criarContaPaciente() {
     responsavel: respNome, resp_dnasc: respNasc, resp_cpf: respCPF,
     parentesco: respPar, tel_resp: respTel,
     email_resp: respEmail, email_conta: respEmail,
-    senha: senhaProvisoria, senhaProvisoria: true,
+    senhaProvisoria: true,
     medCRM: '', // sem médico vinculado ainda
     medicosVinculados: {},
     criadoEm: new Date().toISOString(),
     cadastroTipo: 'autonomo', // cadastrado pelo próprio responsável
   };
 
+  // Cria a conta de autenticação e grava os dados AUTENTICADO como a nova conta
+  // (necessário porque a sessão principal está deslogada nesta tela).
+  const authUid = await criarContaAuthSecundaria(respEmail, senhaProvisoria, async (uid, sdb) => {
+    novoPac.authUid = uid;
+    await sdb.ref('pacientes/' + novoId).set(novoPac);
+    await sdb.ref('loginIndex/pac/' + novoId).set(respEmail.toLowerCase());
+  });
+  if (authUid === 'existente') {
+    errEl.textContent = 'Este e-mail já está cadastrado. Use "Esqueci minha senha" se perdeu o acesso.';
+    errEl.style.display = 'block'; return;
+  }
+
   try {
-    await DB.set('pacientes/' + novoId, novoPac);
+    // Fallback: se o Auth falhou, grava via sessão comum com senha em texto (migra no 1º login)
+    if (!authUid) {
+      novoPac.senha = senhaProvisoria;
+      delete novoPac.authUid;
+      await DB.set('pacientes/' + novoId, novoPac);
+    }
 
 
     // Envia e-mail de boas-vindas
@@ -5978,13 +6205,20 @@ async function salvarProntuario(){
   let senha = '';
   if (!pacExistente) {
     senha = senhaInicial(dados.pacId, dados.dnasc);
+    // Conta de autenticação (e-mail sintético por ID; senha inicial guardada com hash no Auth)
+    const emailSint = emailPacSintetico(dados.pacId);
+    const uidNovo = await criarContaAuthSecundaria(emailSint, senha);
     const novoPac = {
       nome:dados.nome, dnasc:dados.dnasc, sexo:dados.sexo,
       responsavel:dados.responsavel, parentesco:dados.parentesco,
       tel_resp:dados.tel_resp, email_resp:dados.email_resp,
-      convenio:dados.convenio, senha, medCRM,
+      email_conta:dados.email_resp||'',
+      convenio:dados.convenio, medCRM,
+      senhaProvisoria:true,
       criadoEm:new Date().toISOString(),
     };
+    if (uidNovo && uidNovo !== 'existente') novoPac.authUid = uidNovo;
+    else novoPac.senha = senha; // fallback: migra no 1º login
     await DB.set(pacPath, novoPac);
   } else {
     senha = pacExistente.senha || senhaInicial(dados.pacId, dados.dnasc);
@@ -6707,55 +6941,42 @@ async function enviarRecuperacao() {
     errEl.style.display = 'block'; return;
   }
 
-  // Busca médico pelo e-mail no Firebase
   try {
-    const meds = await DB.get('medicos') || {};
-    let encontrado = null;
-    let crmEncontrado = null;
-    for (const [crm, dados] of Object.entries(meds)) {
-      if ((dados.email||'').toLowerCase() === emailDigitado) {
-        encontrado = dados; crmEncontrado = crm; break;
+    // Verifica se há médico com este e-mail (para orientar contas ainda não migradas)
+    let temConta = false, contaMigrada = false;
+    try {
+      const meds = await DB.get('medicos') || {};
+      for (const dados of Object.values(meds)) {
+        if ((dados.email||'').toLowerCase() === emailDigitado) {
+          temConta = true; contaMigrada = !!dados.authUid; break;
+        }
       }
-    }
+    } catch(e) {}
 
-    if (!encontrado) {
-      errEl.textContent = 'Nenhuma conta encontrada com este e-mail.';
+    if (temConta && !contaMigrada) {
+      // Conta ainda sem Auth: não é possível enviar link até o primeiro acesso
+      errEl.textContent = 'Sua conta ainda não foi ativada para redefinição por e-mail. Entre em contato com a administração da clínica.';
       errEl.style.display = 'block'; return;
     }
 
-    // Gera nova senha temporária
-    const novaSenha = 'Capi' + Math.random().toString(36).slice(2,7).toUpperCase();
-
-    // Salva nova senha no Firebase
-    const dadosAtuais = encontrado;
-    dadosAtuais.senhaMed = novaSenha;
-    dadosAtuais.senhaProvisoria = true;
-    await DB.set('medicos/' + crmEncontrado, dadosAtuais);
-
-    // Atualiza MED_USERS em memória
-    MED_USERS[crmEncontrado] = novaSenha;
-
-    // Envia e-mail via EmailJS
-    const nomeDoc = (encontrado.nome || MED_NAMES[crmEncontrado] || 'Médico').split(' ').slice(0,2).join(' ');
-    const emailEnviado = await enviarEmail(
-      emailDigitado, nomeDoc,
-      'Sua nova senha provisória — CapiClinic',
-      novaSenha, crmEncontrado, 'medico'
-    );
-
+    await auth.sendPasswordResetEmail(emailDigitado);
     document.getElementById('esqueci-step-email').style.display = 'none';
     document.getElementById('esqueci-step-ok').style.display = '';
-    document.getElementById('esqueci-ok-msg').innerHTML = emailEnviado
-      ? `✅ Nova senha enviada para <b>${emailDigitado}</b>.<br><br>
-         <span style="font-size:11px;color:var(--muted)">Verifique sua caixa de entrada (e a pasta de spam).<br>Use a senha recebida para entrar e criar uma nova senha definitiva.</span>`
-      : `<b>Senha provisória gerada:</b><br>
-         <span style="font-size:22px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.1em">${novaSenha}</span><br>
-         <span style="font-size:11px;color:var(--muted)">(Falha no envio automático — anote esta senha e altere após o login)</span>`;
-
+    document.getElementById('esqueci-ok-msg').innerHTML =
+      `✅ Se existir uma conta com <b>${emailDigitado}</b>, enviamos um link para redefinir a senha.<br><br>
+       <span style="font-size:11px;color:var(--muted)">Verifique sua caixa de entrada (e a pasta de spam) e siga o link para criar uma nova senha.</span>`;
   } catch(e) {
-    errEl.textContent = 'Erro ao processar solicitação. Tente novamente.';
-    errEl.style.display = 'block';
-    console.error(e);
+    if (e.code === 'auth/user-not-found') {
+      // Não revela existência da conta
+      document.getElementById('esqueci-step-email').style.display = 'none';
+      document.getElementById('esqueci-step-ok').style.display = '';
+      document.getElementById('esqueci-ok-msg').innerHTML =
+        `✅ Se existir uma conta com <b>${emailDigitado}</b>, enviamos um link para redefinir a senha.<br><br>
+         <span style="font-size:11px;color:var(--muted)">Verifique sua caixa de entrada (e a pasta de spam).</span>`;
+    } else {
+      errEl.textContent = 'Erro ao processar solicitação. Tente novamente.';
+      errEl.style.display = 'block'; console.error(e);
+    }
   }
 }
 
@@ -6781,38 +7002,37 @@ async function enviarRecuperacaoPac() {
     errEl.textContent = 'Informe um e-mail válido.'; errEl.style.display = 'block'; return;
   }
   try {
-    const pacs = await DB.get('pacientes') || {};
-    let encontrado = null, idEncontrado = null;
-    for (const [id, dados] of Object.entries(pacs)) {
-      if ((dados.email_conta||'').toLowerCase() === emailDigitado) {
-        encontrado = dados; idEncontrado = id; break;
+    let temConta = false, contaMigrada = false;
+    try {
+      const pacs = await DB.get('pacientes') || {};
+      for (const dados of Object.values(pacs)) {
+        if ((dados.email_conta||'').toLowerCase() === emailDigitado) {
+          temConta = true; contaMigrada = !!dados.authUid; break;
+        }
       }
-    }
-    if (!encontrado) {
-      errEl.textContent = 'Nenhuma conta encontrada com este e-mail.'; errEl.style.display = 'block'; return;
-    }
-    const novasSenha = 'Capi' + Math.random().toString(36).slice(2,7).toUpperCase();
-    const dadosAtuais = {...encontrado, senha: novasSenha, senhaProvisoria: true};
-    await DB.set('pacientes/' + idEncontrado, dadosAtuais);
+    } catch(e) {}
 
-    // Envia e-mail via EmailJS
-    const nomeResp = (encontrado.responsavel || encontrado.nome || 'Responsável').split(' ').slice(0,2).join(' ');
-    const emailEnviado = await enviarEmail(
-      emailDigitado, nomeResp,
-      'Sua nova senha de acesso — CapiClinic',
-      novasSenha, idEncontrado, 'paciente'
-    );
+    if (temConta && !contaMigrada) {
+      errEl.textContent = 'Sua conta ainda não foi ativada para redefinição por e-mail. Entre em contato com a clínica.';
+      errEl.style.display = 'block'; return;
+    }
 
+    await auth.sendPasswordResetEmail(emailDigitado);
     document.getElementById('esp-step-email').style.display = 'none';
     document.getElementById('esp-step-ok').style.display = '';
-    document.getElementById('esp-ok-msg').innerHTML = emailEnviado
-      ? `✅ Nova senha enviada para <b>${emailDigitado}</b>.<br><br>
-         <span style="font-size:11px;color:var(--muted)">Verifique sua caixa de entrada (e a pasta de spam).<br>Use a senha recebida para entrar e criar uma senha definitiva.</span>`
-      : `<b>Senha provisória gerada:</b><br>
-         <span style="font-size:22px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.1em">${novasSenha}</span><br>
-         <span style="font-size:11px;color:var(--muted)">Login: <b>${idEncontrado}</b><br>(Falha no envio automático — anote esta senha)</span>`;
+    document.getElementById('esp-ok-msg').innerHTML =
+      `✅ Se existir uma conta com <b>${emailDigitado}</b>, enviamos um link para redefinir a senha.<br><br>
+       <span style="font-size:11px;color:var(--muted)">Verifique sua caixa de entrada (e a pasta de spam) e siga o link para criar uma nova senha.</span>`;
   } catch(e) {
-    errEl.textContent = 'Erro ao processar. Tente novamente.'; errEl.style.display = 'block'; console.error(e);
+    if (e.code === 'auth/user-not-found') {
+      document.getElementById('esp-step-email').style.display = 'none';
+      document.getElementById('esp-step-ok').style.display = '';
+      document.getElementById('esp-ok-msg').innerHTML =
+        `✅ Se existir uma conta com <b>${emailDigitado}</b>, enviamos um link para redefinir a senha.<br><br>
+         <span style="font-size:11px;color:var(--muted)">Verifique sua caixa de entrada (e a pasta de spam).</span>`;
+    } else {
+      errEl.textContent = 'Erro ao processar. Tente novamente.'; errEl.style.display = 'block'; console.error(e);
+    }
   }
 }
 
@@ -6835,14 +7055,16 @@ async function confirmarTrocaSenhaPac() {
   if (nova.length < 6) { errEl.textContent = 'A senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return; }
   if (nova !== conf) { errEl.textContent = 'As senhas não coincidem.'; errEl.style.display = 'block'; return; }
   try {
-    const dados = await DB.get('pacientes/' + pid) || {};
-    dados.senha = nova;
-    dados.senhaProvisoria = false;
-    await DB.set('pacientes/' + pid, dados);
+    if (auth.currentUser) await auth.currentUser.updatePassword(nova);
+    await DB.set('pacientes/' + pid + '/senhaProvisoria', false);
+    try { await DB.set('pacientes/' + pid + '/senha', null); } catch(e) {}
     document.getElementById('modal-troca-senha-pac').style.display = 'none';
     toast('✅ Senha criada com sucesso! Bem-vindo ao CapiClinic!', 'ok');
   } catch(e) {
-    errEl.textContent = 'Erro ao salvar. Tente novamente.'; errEl.style.display = 'block'; console.error(e);
+    errEl.textContent = e.code === 'auth/requires-recent-login'
+      ? 'Por segurança, saia e entre novamente para alterar a senha.'
+      : 'Erro ao salvar. Tente novamente.';
+    errEl.style.display = 'block'; console.error(e);
   }
 }
 
@@ -6867,15 +7089,16 @@ async function confirmarTrocaSenhaMed() {
   if (nova.length < 6) { errEl.textContent = 'A senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return; }
   if (nova !== conf) { errEl.textContent = 'As senhas não coincidem.'; errEl.style.display = 'block'; return; }
   try {
-    const dados = await DB.get('medicos/' + crm) || {};
-    dados.senhaMed = nova;
-    dados.senhaProvisoria = false;
-    MED_USERS[crm] = nova;
-    await DB.set('medicos/' + crm, dados);
+    if (auth.currentUser) await auth.currentUser.updatePassword(nova);
+    await DB.set('medicos/' + crm + '/senhaProvisoria', false);
+    try { await DB.set('medicos/' + crm + '/senhaMed', null); } catch(e) {}
     document.getElementById('modal-troca-senha-med').style.display = 'none';
     toast('✅ Senha criada com sucesso!', 'ok');
   } catch(e) {
-    errEl.textContent = 'Erro ao salvar. Tente novamente.'; errEl.style.display = 'block'; console.error(e);
+    errEl.textContent = e.code === 'auth/requires-recent-login'
+      ? 'Por segurança, saia e entre novamente para alterar a senha.'
+      : 'Erro ao salvar. Tente novamente.';
+    errEl.style.display = 'block'; console.error(e);
   }
 }
 
@@ -6898,21 +7121,25 @@ async function confirmarAlteracaoSenha() {
   errEl.style.display = 'none';
 
   if (!atual) { errEl.textContent = 'Informe a senha atual.'; errEl.style.display = 'block'; return; }
-  if (MED_USERS[medCRM] !== atual) { errEl.textContent = 'Senha atual incorreta.'; errEl.style.display = 'block'; return; }
   if (nova.length < 6) { errEl.textContent = 'A nova senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return; }
   if (nova !== conf) { errEl.textContent = 'As senhas não coincidem.'; errEl.style.display = 'block'; return; }
 
   try {
-    const dadosAtuais = await DB.get('medicos/' + medCRM) || {};
-    dadosAtuais.senhaMed = nova;
-    dadosAtuais.senhaProvisoria = false;
-    await DB.set('medicos/' + medCRM, dadosAtuais);
-    MED_USERS[medCRM] = nova; // atualiza em memória
+    const user = auth.currentUser;
+    if (!user) { errEl.textContent = 'Sessão expirada. Entre novamente.'; errEl.style.display = 'block'; return; }
+    // Reautentica com a senha atual antes de alterar
+    const cred = firebase.auth.EmailAuthProvider.credential(user.email, atual);
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(nova);
+    try { await DB.set('medicos/' + medCRM + '/senhaProvisoria', false); } catch(e) {}
+    try { await DB.set('medicos/' + medCRM + '/senhaMed', null); } catch(e) {}
     fecharAlterarSenha();
     toggleMedEdit(false);
     toast('Senha alterada com sucesso! ✅', 'ok');
   } catch(e) {
-    errEl.textContent = 'Erro ao salvar nova senha. Tente novamente.';
+    errEl.textContent = (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential')
+      ? 'Senha atual incorreta.'
+      : 'Erro ao salvar nova senha. Tente novamente.';
     errEl.style.display = 'block';
   }
 }
@@ -7096,9 +7323,20 @@ async function salvarCadastroPac() {
   const pacExistente = window._cadPacIdExistente
     ? await DB.get('pacientes/' + id)
     : null;
-  // Senha: manter a existente ou gerar nova provisória
-  const senhaProvisoria = pacExistente?.senha || ('Capi' + Math.random().toString(36).slice(2,7).toUpperCase());
+  // Senha provisória (apenas para 1ª entrada; guardada com hash no Auth)
+  const senhaProvisoria = 'Capi' + Math.random().toString(36).slice(2,7).toUpperCase();
   const senhaJaProvisoria = pacExistente ? pacExistente.senhaProvisoria : true;
+
+  // Cria conta de Auth se o paciente ainda não tiver (via app secundário, sem deslogar o admin)
+  let novoAuthUid = pacExistente && pacExistente.authUid ? pacExistente.authUid : null;
+  if (!novoAuthUid) {
+    const r = await criarContaAuthSecundaria(contaEmail, senhaProvisoria);
+    if (r === 'existente') {
+      errEl.textContent = 'Já existe uma conta com este e-mail. Use outro e-mail ou recupere o acesso.';
+      errEl.style.display = 'block'; return;
+    }
+    if (r) novoAuthUid = r;
+  }
 
   const novoPac = {
     ...(pacExistente || {}), // preserva dados existentes
@@ -7107,14 +7345,16 @@ async function salvarCadastroPac() {
     responsavel: respNome, resp_dnasc: respNasc, resp_cpf: respCPF,
     parentesco: respPar, tel_resp: respTel, email_resp: respEmail,
     email_conta: contaEmail,
-    senha: senhaProvisoria,
     senhaProvisoria: senhaJaProvisoria,
     medCRM, criadoEm: pacExistente?.criadoEm || new Date().toISOString(),
     medicosVinculados: { ...(pacExistente?.medicosVinculados||{}), [medCRM]: 'ativo' },
   };
+  if (novoAuthUid) { novoPac.authUid = novoAuthUid; delete novoPac.senha; }
+  else { novoPac.senha = senhaProvisoria; } // fallback: migra no 1º login
 
   try {
     await DB.set('pacientes/' + id, novoPac);
+    if (novoAuthUid) await registrarIndiceLogin('pac', id, contaEmail.toLowerCase());
 
     // Envia e-mail de boas-vindas com senha via EmailJS
     const nomeResp = respNome.split(' ').slice(0,2).join(' ');
@@ -7658,13 +7898,36 @@ document.getElementById('f-dtcons')&&(document.getElementById('f-dtcons').value=
 const nowMonth=new Date().getMonth();
 document.getElementById('pac-mes-sel')&&(document.getElementById('pac-mes-sel').value=nowMonth);
 
-// Verificar sessão médica salva (reconecta sem precisar logar de novo)
-(function checkSavedSession() {
-  const crm = getSavedSession();
-  if (crm && MED_USERS[crm]) {
-    _activateMedSession(crm);
+// Restaura a sessão automaticamente a partir do Firebase Auth (após recarregar a página)
+let _sessaoRestaurada = false;
+async function _restaurarMedSessao(crm) {
+  if (MED_NAMES[crm] === undefined) {
+    try {
+      const m = await DB.get('medicos/' + crm);
+      if (m && m.nome) MED_NAMES[crm] = m.nome + ' (CRM-' + (m.uf||'SP') + ' ' + crm + ')';
+      else MED_NAMES[crm] = 'CRM ' + crm;
+    } catch(e) { MED_NAMES[crm] = 'CRM ' + crm; }
   }
-})();
+  _activateMedSession(crm);
+}
+async function _restaurarPacSessao(id) {
+  let nome = id;
+  try { const p = await DB.get('pacientes/' + id); if (p && p.nome) nome = p.nome; } catch(e) {}
+  loggedPac = true; pacName = nome; pacId = id;
+  lembrarSessao('pac', id);
+  const lbl = document.getElementById('pac-logged-name'); if (lbl) lbl.textContent = nome;
+  showPage('pacientes', document.getElementById('tab-pac'));
+  loadPacData(); initGrowthChartPac();
+}
+auth.onAuthStateChanged(user => {
+  if (!user || _sessaoRestaurada || loggedMed || loggedPac) return;
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(KEY_SESS_ROLE) || 'null'); } catch(e) {}
+  if (!s || !s.key) return;
+  _sessaoRestaurada = true;
+  if (s.role === 'med') _restaurarMedSessao(s.key);
+  else if (s.role === 'pac') _restaurarPacSessao(s.key);
+});
 
 // ═══════════════════════════ CADASTRO MÉDICO (NOVO) ═══════════════════════════
 function showMedLoginTab(tab) {
@@ -7713,19 +7976,39 @@ async function cadastrarMedico() {
       }
     }
 
-    // Salvar como pendente de aprovação
-    await DB.set('medicos/' + crm, {
+    // Dados do cadastro (pendente de aprovação)
+    const regMed = {
       nome, crm, uf, especialidade: esp, email,
-      senhaMed: senha, senhaProvisoria: false,
+      senhaProvisoria: false,
       status: 'pendente', // admin precisa aprovar
       criadoEm: new Date().toISOString(),
-    });
+    };
 
-    // Notificar administradores
-    await DB.set('admin_notificacoes/med_pendente_' + crm, {
-      tipo: 'novo_medico', crm, nome, email, esp,
-      data: new Date().toISOString(), lido: false
+    // Cria a conta de Auth e grava AUTENTICADO como a nova conta (sessão principal está deslogada).
+    // medUidToCrm só é gravado no 1º login após aprovação (evita acesso de médico pendente).
+    const medUid = await criarContaAuthSecundaria(email, senha, async (uid, sdb) => {
+      regMed.authUid = uid;
+      await sdb.ref('medicos/' + crm).set(regMed);
+      await sdb.ref('loginIndex/med/' + crm).set(email.toLowerCase());
+      await sdb.ref('admin_notificacoes/med_pendente_' + crm).set({
+        tipo: 'novo_medico', crm, nome, email, esp,
+        data: new Date().toISOString(), lido: false
+      });
     });
+    if (medUid === 'existente') {
+      errEl.textContent = 'Este e-mail já possui conta. Use "Esqueci minha senha".'; errEl.style.display = 'block'; return;
+    }
+    // Fallback: Auth falhou → grava via sessão comum com senha em texto (migra no 1º login)
+    if (!medUid) {
+      regMed.senhaMed = senha;
+      delete regMed.authUid;
+      await DB.set('medicos/' + crm, regMed);
+      await DB.set('admin_notificacoes/med_pendente_' + crm, {
+        tipo: 'novo_medico', crm, nome, email, esp,
+        data: new Date().toISOString(), lido: false
+      });
+    }
+
 
     okEl.innerHTML = `
       <div style="font-size:28px;margin-bottom:8px">✅</div>
