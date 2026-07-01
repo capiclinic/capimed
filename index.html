@@ -172,6 +172,14 @@ button.export{background:var(--teal);color:white}
 .step-btn{border:1px solid var(--line);background:white;border-radius:10px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);white-space:nowrap;font-family:'DM Sans',sans-serif;transition:.12s}
 .step-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
 .step-btn.done{background:#E8F7EF;color:var(--green);border-color:#A9E0BE}
+.uso-per-btn{border:1px solid var(--line);background:white;border-radius:9px;padding:6px 13px;font-size:12px;font-weight:800;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;transition:.12s}
+.uso-per-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
+body.dark-mode .uso-per-btn{background:#21262D;color:#8B949E;border-color:#30363D}
+body.dark-mode .uso-per-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
+.uso-card{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.uso-card .n{font-size:26px;font-weight:900;color:var(--navy);line-height:1}
+.uso-card .l{font-size:11.5px;color:var(--muted);font-weight:700;margin-top:4px}
+.uso-card .s{font-size:10px;color:var(--muted);opacity:.8}
 /* ── LOGIN ── */
 .login-wrap{max-width:420px;margin:60px auto}
 .login-panel{background:white;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:36px 32px}
@@ -981,14 +989,9 @@ button.export{background:var(--teal);color:white}
           <div id="pac-id-novo" style="display:none;background:#EAF2FF;padding:14px 18px;align-items:center;gap:14px;flex-wrap:wrap">
             <div style="width:36px;height:36px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🆕</div>
             <div style="flex:1">
-              <div style="font-size:12px;font-weight:900;color:var(--blue);margin-bottom:2px">Novo paciente — ID gerado</div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:10px;color:var(--muted)">ID:</span>
-                <span id="pac-id-display-novo" style="font-size:20px;font-weight:900;font-family:'DM Mono',monospace;color:var(--navy);letter-spacing:.1em">—</span>
-              </div>
-              <div style="font-size:11px;color:var(--muted);margin-top:3px">Senha inicial: <b id="pac-senha-display">—</b> · Entregar ao responsável após a consulta</div>
+              <div style="font-size:12px;font-weight:900;color:var(--blue);margin-bottom:2px">Novo paciente</div>
+              <div style="font-size:11.5px;color:var(--muted);margin-top:2px">O <b>ID único</b> e a <b>senha inicial</b> serão gerados automaticamente ao <b>finalizar a consulta</b> e mostrados para você entregar ao responsável.</div>
             </div>
-            <button onclick="copiarID()" style="background:white;border:1px solid #A3C0F7;color:var(--blue);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">📋 Copiar ID</button>
           </div>
         </div>
       </div>
@@ -1876,6 +1879,37 @@ button.export{background:var(--teal);color:white}
       <div style="margin-left:auto;font-size:11px;opacity:.6">CRM 239138</div>
     </div>
 
+    <!-- ── PAINEL DE USO ── -->
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-head" style="flex-wrap:wrap;gap:8px">
+        <div><h2>📊 Painel de Uso</h2></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="uso-per-btn active" data-per="semana" onclick="setUsoPeriodo('semana')">Semana</button>
+          <button class="uso-per-btn" data-per="mes"    onclick="setUsoPeriodo('mes')">Mês</button>
+          <button class="uso-per-btn" data-per="ano"    onclick="setUsoPeriodo('ano')">Ano</button>
+          <button class="uso-per-btn" data-per="custom" onclick="setUsoPeriodo('custom')">Personalizado</button>
+        </div>
+      </div>
+
+      <div id="uso-custom-range" style="display:none;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end">
+        <div class="field" style="margin:0"><label>De</label><input type="date" id="uso-de" style="min-width:150px"></div>
+        <div class="field" style="margin:0"><label>Até</label><input type="date" id="uso-ate" style="min-width:150px"></div>
+        <button class="secondary" style="padding:8px 16px;font-size:12.5px" onclick="renderPainelUso()">Aplicar</button>
+      </div>
+
+      <div id="uso-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px"></div>
+
+      <div id="uso-chart-titulo" style="font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Novos cadastros no período</div>
+      <div style="height:230px;position:relative"><canvas id="uso-chart"></canvas></div>
+
+      <div style="margin-top:18px">
+        <div style="font-size:13px;font-weight:900;color:var(--navy);margin-bottom:8px">🕑 Últimos acessos</div>
+        <div id="uso-ultimos"></div>
+      </div>
+
+      <div id="uso-conta-admin" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)"></div>
+    </div>
+
     <!-- MÉDICOS PENDENTES DE APROVAÇÃO -->
     <div class="panel" style="margin-bottom:16px">
       <div class="panel-head"><div><h2>🔔 Solicitações de Cadastro — Médicos</h2></div><button class="secondary" style="padding:7px 12px;font-size:12px" onclick="renderMedicosPendentes()">↻ Atualizar</button></div>
@@ -1936,7 +1970,7 @@ button.export{background:var(--teal);color:white}
       <div id="pac-panel-login">
         <div class="login-sub" style="margin-bottom:12px">Use o ID e senha fornecidos pela clínica ou criados no cadastro.</div>
         <div id="loginPacErr" class="login-err">Usuário ou senha incorretos.</div>
-        <div class="login-field"><label>ID do paciente</label><input id="lpUser" type="text" placeholder="Ex.: CPC3A8F2K1" autocomplete="username" style="font-family:'DM Mono',monospace;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="login-field"><label>ID do paciente ou e-mail</label><input id="lpUser" type="text" placeholder="Ex.: CPC3A8F2K1 ou seu@email.com" autocomplete="username"></div>
         <div class="login-field"><label>Senha</label><input id="lpPass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLoginPac()"></div>
         <button class="primary" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#0D9488,#178A4A)" onclick="doLoginPac()">Entrar</button>
         <div style="text-align:center;margin-top:10px">
@@ -3350,6 +3384,7 @@ function _activateMedSession(u) {
   if (uid) {
     registrarMedUid(uid, u);
     DB.get('medicos/' + u + '/authUid').then(a => { if (!a) DB.set('medicos/' + u + '/authUid', uid); }).catch(()=>{});
+    try { DB.set('medicos/' + u + '/ultimoAcesso', new Date().toISOString()); } catch(e) {}
   }
   document.getElementById('med-logged-name').textContent = MED_NAMES[u];
   setTimeout(renderAtividadesMed, 600);
@@ -3377,12 +3412,50 @@ function _activateMedSession(u) {
   }
 }
 
+// Finaliza o login do paciente (usado tanto por ID quanto por e-mail)
+function _finalizarLoginPac(id, pf) {
+  loggedPac = true; pacId = id; pacName = (pf && pf.nome) || id;
+  lembrarSessao('pac', id);
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if (uid) { try { DB.set('pacUidToId/' + uid, id); } catch(e) {} } // índice p/ login por e-mail
+  try { DB.set('pacientes/' + id + '/ultimoAcesso', new Date().toISOString()); } catch(e) {}
+  document.getElementById('pac-logged-name').textContent = pacName;
+  showPage('pacientes', document.getElementById('tab-pac'));
+  loadPacData(); initGrowthChartPac();
+  toast('Bem-vindo, ' + pacName + '! 🦫', 'ok');
+  if (pf && pf.senhaProvisoria) setTimeout(() => abrirTrocaSenhaPac(id, pacName), 600);
+}
+
 async function doLoginPac() {
-  const u   = document.getElementById('lpUser').value.trim().toUpperCase();
+  const raw = document.getElementById('lpUser').value.trim();
   const p   = document.getElementById('lpPass').value.trim();
   const err = document.getElementById('loginPacErr');
   err.style.display = 'none';
 
+  // ── LOGIN POR E-MAIL ──
+  if (raw.includes('@')) {
+    const email = raw.toLowerCase();
+    try {
+      await auth.signInWithEmailAndPassword(email, p);
+    } catch(e) {
+      err.textContent = 'Usuário ou senha incorretos.';
+      err.style.display = 'block'; return;
+    }
+    // Descobre o ID único do paciente a partir do uid autenticado
+    let id = null;
+    try { id = await DB.get('pacUidToId/' + auth.currentUser.uid); } catch(e) {}
+    if (!id) {
+      await auth.signOut();
+      err.textContent = 'No primeiro acesso, entre com o seu ID do paciente. Depois o login por e-mail fica liberado.';
+      err.style.display = 'block'; return;
+    }
+    let pf = null; try { pf = await DB.get('pacientes/' + id); } catch(e) {}
+    _finalizarLoginPac(id, pf);
+    return;
+  }
+
+  // ── LOGIN POR ID ──
+  const u = raw.toUpperCase();
   let pacFirebase = null;
   try { pacFirebase = await DB.get('pacientes/' + u); } catch(e) {}
 
@@ -3391,19 +3464,9 @@ async function doLoginPac() {
   try { emailIdx = await DB.get('loginIndex/pac/' + u); } catch(e) {}
   const candidatos = [...new Set([emailIdx, emailSint].filter(Boolean))];
 
-  const finalizarPac = () => {
-    loggedPac = true; pacName = (pacFirebase && pacFirebase.nome) || u; pacId = u;
-    lembrarSessao('pac', u);
-    document.getElementById('pac-logged-name').textContent = pacName;
-    showPage('pacientes', document.getElementById('tab-pac'));
-    loadPacData(); initGrowthChartPac();
-    toast('Bem-vindo, ' + pacName + '! 🦫', 'ok');
-    if (pacFirebase && pacFirebase.senhaProvisoria) setTimeout(() => abrirTrocaSenhaPac(u, pacName), 600);
-  };
-
   // 1) Tenta autenticar com os e-mails conhecidos
   for (const em of candidatos) {
-    try { await auth.signInWithEmailAndPassword(em, p); finalizarPac(); return; }
+    try { await auth.signInWithEmailAndPassword(em, p); _finalizarLoginPac(u, pacFirebase); return; }
     catch(e) { /* tenta próximo / migração */ }
   }
 
@@ -3416,20 +3479,18 @@ async function doLoginPac() {
       await registrarIndiceLogin('pac', u, emailReal);
       try { await DB.set('pacientes/' + u + '/authUid', cred.user.uid); } catch(e) {}
       try { await DB.set('pacientes/' + u + '/senha', null); } catch(e) {}
-      finalizarPac();
+      _finalizarLoginPac(u, pacFirebase);
       return;
     } catch(e) {
       if (e.code === 'auth/email-already-in-use') {
-        try { await auth.signInWithEmailAndPassword(emailReal, p); finalizarPac(); return; } catch(e2) {}
+        try { await auth.signInWithEmailAndPassword(emailReal, p); _finalizarLoginPac(u, pacFirebase); return; } catch(e2) {}
       }
     }
   }
 
   // Compatibilidade com logins legados por usuário (sem ID) — apenas com regras abertas
-  const uLeg = document.getElementById('lpUser').value.trim();
-  const legacy = PAC_USERS[uLeg];
-  const senhaLeg = legacy ? legacy.senha === p : false;
-  if (uLeg.length > 0 && senhaLeg && legacy) {
+  const legacy = PAC_USERS[raw];
+  if (raw.length > 0 && legacy && legacy.senha === p) {
     loggedPac = true; pacName = legacy.nome; pacId = '';
     document.getElementById('pac-logged-name').textContent = pacName;
     showPage('pacientes', document.getElementById('tab-pac'));
@@ -3495,13 +3556,163 @@ function showMedSub(n) {
   if (n===3)        renderArquivosMed();
   if (n==='atend')  showAtendSub(currentAtendSub);
   if (n==='pagina') renderPaginaMedico();
-  if (n==='admin')  { renderAdminPacientes(''); renderAdminMedicos(); renderMedicosPendentes(); }
+  if (n==='admin')  { renderPainelUso(); renderAdminPacientes(''); renderAdminMedicos(); renderMedicosPendentes(); }
 }
 
 // ── Mostrar aba Admin apenas para o administrador ──
 function configurarAbasAdmin(crm) {
   const btnAdmin = document.getElementById('msub-admin');
   if (btnAdmin) btnAdmin.style.display = ADMIN_CRMS.includes(crm) ? 'flex' : 'none';
+}
+
+// ═══════════════════════════ PAINEL DE USO (ADMIN) ═══════════════════════════
+let _usoPeriodo = 'semana';
+let _usoChart = null;
+
+function setUsoPeriodo(p) {
+  _usoPeriodo = p;
+  document.querySelectorAll('.uso-per-btn').forEach(b => b.classList.toggle('active', b.dataset.per === p));
+  const cr = document.getElementById('uso-custom-range');
+  if (cr) cr.style.display = p === 'custom' ? 'flex' : 'none';
+  if (p !== 'custom') renderPainelUso();
+}
+
+function _usoIntervalo() {
+  const agora = new Date();
+  let ini, fim = new Date(agora);
+  if (_usoPeriodo === 'semana')      { ini = new Date(agora); ini.setDate(ini.getDate() - 6); }
+  else if (_usoPeriodo === 'mes')    { ini = new Date(agora); ini.setDate(ini.getDate() - 29); }
+  else if (_usoPeriodo === 'ano')    { ini = new Date(agora); ini.setMonth(ini.getMonth() - 11); ini.setDate(1); }
+  else { // personalizado
+    const de  = (document.getElementById('uso-de')  || {}).value;
+    const ate = (document.getElementById('uso-ate') || {}).value;
+    ini = de  ? new Date(de  + 'T00:00:00') : new Date(agora.getTime() - 6 * 864e5);
+    fim = ate ? new Date(ate + 'T23:59:59') : new Date(agora);
+  }
+  ini.setHours(0, 0, 0, 0);
+  return { ini, fim };
+}
+
+function _usoFmtDataHora(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return isNaN(d) ? '—' : d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+async function renderPainelUso() {
+  if (!ADMIN_CRMS.includes(medCRM)) return;
+  const cardsEl = document.getElementById('uso-cards');
+  if (!cardsEl) return;
+
+  let meds = {}, pacs = {};
+  try { meds = await DB.get('medicos')   || {}; } catch(e) {}
+  try { pacs = await DB.get('pacientes') || {}; } catch(e) {}
+
+  const medArr = Object.entries(meds).map(([crm, m]) => ({ crm, ...m }));
+  const pacArr = Object.entries(pacs).map(([id, p]) => ({ id, ...p }));
+  const { ini, fim } = _usoIntervalo();
+  const noIntervalo = ts => { if (!ts) return false; const d = new Date(ts); return !isNaN(d) && d >= ini && d <= fim; };
+
+  const totalMed = medArr.length;
+  const totalPac = pacArr.length;
+  const novos  = [...medArr, ...pacArr].filter(x => noIntervalo(x.criadoEm || x.criadoem)).length;
+  const ativos = [...medArr, ...pacArr].filter(x => noIntervalo(x.ultimoAcesso)).length;
+
+  const card = (n, label, sub) => `<div class="uso-card"><div class="n">${n}</div><div class="l">${label}</div><div class="s">${sub||''}</div></div>`;
+  cardsEl.innerHTML =
+    card(totalMed, 'Médicos', 'total') +
+    card(totalPac, 'Pacientes', 'total') +
+    card(novos, 'Novos cadastros', 'no período') +
+    card(ativos, 'Usuários ativos', 'no período');
+
+  _renderUsoChart(medArr, pacArr, ini, fim);
+
+  // Últimos acessos (8 mais recentes)
+  const lista = [
+    ...medArr.map(m => ({ nome: (m.nome || ('CRM ' + m.crm)), tipo: 'Médico',   ts: m.ultimoAcesso })),
+    ...pacArr.map(p => ({ nome: (p.nome || p.id),             tipo: 'Paciente', ts: p.ultimoAcesso })),
+  ].filter(x => x.ts).sort((a, b) => new Date(b.ts) - new Date(a.ts)).slice(0, 8);
+
+  const ultEl = document.getElementById('uso-ultimos');
+  ultEl.innerHTML = lista.length
+    ? lista.map(x => `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;background:white">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:800;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.nome}</div>
+          <div style="font-size:11px;color:var(--muted)">${x.tipo}</div>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);white-space:nowrap">${_usoFmtDataHora(x.ts)}</div>
+      </div>`).join('')
+    : '<div style="color:var(--muted);font-size:12px;padding:6px 0">Nenhum acesso registrado ainda. Os acessos passam a ser contabilizados a partir de agora, a cada login.</div>';
+
+  // Dados reais da própria conta admin (fornecidos pelo Auth)
+  const contaEl = document.getElementById('uso-conta-admin');
+  const user = auth.currentUser;
+  if (contaEl && user && user.metadata) {
+    const criada = user.metadata.creationTime   ? new Date(user.metadata.creationTime).toLocaleString('pt-BR')   : '—';
+    const ult    = user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime).toLocaleString('pt-BR') : '—';
+    contaEl.innerHTML = `🔐 Sua conta (Firebase Auth) · criada em <b>${criada}</b> · último acesso <b>${ult}</b>`;
+  }
+}
+
+function _renderUsoChart(medArr, pacArr, ini, fim) {
+  const canvas = document.getElementById('uso-chart');
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  const dias = Math.round((fim - ini) / 864e5) + 1;
+  const buckets = [];
+  const rotulos = [];
+  const chaveDe = d => {
+    if (dias <= 31) return d.toISOString().slice(0, 10);               // diário
+    if (dias <= 366) return d.toISOString().slice(0, 7);               // mensal
+    return String(d.getFullYear());                                     // anual
+  };
+  // Monta a sequência de baldes conforme a granularidade
+  if (dias <= 31) {
+    for (let t = new Date(ini); t <= fim; t.setDate(t.getDate() + 1)) {
+      buckets.push(t.toISOString().slice(0, 10));
+      rotulos.push(t.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+    }
+  } else if (dias <= 366) {
+    const t = new Date(ini.getFullYear(), ini.getMonth(), 1);
+    while (t <= fim) {
+      buckets.push(t.toISOString().slice(0, 7));
+      rotulos.push(t.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
+      t.setMonth(t.getMonth() + 1);
+    }
+  } else {
+    for (let y = ini.getFullYear(); y <= fim.getFullYear(); y++) { buckets.push(String(y)); rotulos.push(String(y)); }
+  }
+
+  const contMed = buckets.map(() => 0);
+  const contPac = buckets.map(() => 0);
+  const acumular = (arr, dst) => arr.forEach(x => {
+    const ts = x.criadoEm || x.criadoem; if (!ts) return;
+    const d = new Date(ts); if (isNaN(d) || d < ini || d > fim) return;
+    const k = chaveDe(d); const i = buckets.indexOf(k); if (i >= 0) dst[i]++;
+  });
+  acumular(medArr, contMed);
+  acumular(pacArr, contPac);
+
+  if (_usoChart) { _usoChart.destroy(); _usoChart = null; }
+  const ctx = canvas.getContext('2d');
+  _usoChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rotulos,
+      datasets: [
+        { label: 'Médicos',   data: contMed, backgroundColor: '#1F6FEB', borderRadius: 4, stack: 'c' },
+        { label: 'Pacientes', data: contPac, backgroundColor: '#16A3B8', borderRadius: 4, stack: 'c' },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { stacked: true, beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } },
+      },
+    },
+  });
 }
 
 // ── Admin: acessar a Área do Paciente sem precisar logar como paciente ──
@@ -3796,6 +4007,7 @@ async function criarContaPaciente() {
     novoPac.authUid = uid;
     await sdb.ref('pacientes/' + novoId).set(novoPac);
     await sdb.ref('loginIndex/pac/' + novoId).set(respEmail.toLowerCase());
+    await sdb.ref('pacUidToId/' + uid).set(novoId);
   });
   if (authUid === 'existente') {
     errEl.textContent = 'Este e-mail já está cadastrado. Use "Esqueci minha senha" se perdeu o acesso.';
@@ -6063,6 +6275,7 @@ function triggerAutoID() {
     if (btnNext) { btnNext.disabled = true; btnNext.style.opacity = '.4'; btnNext.style.cursor = 'not-allowed'; }
     if (hint)    hint.style.display = 'none';
     window._pacIdAtual = null;
+    window._pacNovo = false;
     return;
   }
 
@@ -6080,21 +6293,16 @@ async function autoGerarID(nome, dnasc) {
 
   if (existente) {
     window._pacIdAtual = existente.id;
+    window._pacNovo = false;
     const display = document.getElementById('pac-id-display');
     if (display) display.textContent = existente.id;
     showIdEstado('existente');
     preencherDadosExistente(existente);
     toast('Paciente encontrado — ID: ' + existente.id, 'ok');
   } else {
-    const pacs = await DB.get('pacientes') || {};
-    let novoId;
-    do { novoId = gerarNovoID(); } while (pacs[novoId]);
-    window._pacIdAtual = novoId;
-    const senha = senhaInicial(novoId, dnasc);
-    const dn = document.getElementById('pac-id-display-novo');
-    const ds = document.getElementById('pac-senha-display');
-    if (dn) dn.textContent = novoId;
-    if (ds) ds.textContent = senha;
+    // Novo paciente: o ID definitivo só é gerado ao finalizar a consulta
+    window._pacIdAtual = null;
+    window._pacNovo = true;
     showIdEstado('novo');
   }
 
@@ -6127,8 +6335,8 @@ function preencherDadosExistente(p) {
 }
 
 function avancarParaAnamnese() {
-  if (!window._pacIdAtual) {
-    toast('Aguarde a geração do ID antes de continuar.', 'err');
+  if (!window._pacIdAtual && !window._pacNovo) {
+    toast('Preencha nome e data de nascimento antes de continuar.', 'err');
     return;
   }
   goStep(1);
@@ -6139,7 +6347,7 @@ function gerarOuBuscarID() { triggerAutoID(); }
 
 function atualizarIDFinal() {
   const el = document.getElementById('pac-id-final');
-  if (el) el.textContent = window._pacIdAtual || '—';
+  if (el) el.textContent = window._pacIdAtual || (window._pacNovo ? 'Gerado ao finalizar' : '—');
 }
 
 function copiarID() {
@@ -6189,11 +6397,19 @@ function coletarDados(){
 async function salvarProntuario(){
   const dados = coletarDados();
   if (!dados.nome) { toast('Informe o nome do paciente antes de salvar.','err'); return; }
-  if (!window._pacIdAtual) {
-    toast('⚠️ Gere o ID do paciente (Step 1) antes de finalizar.','err');
+  if (!window._pacIdAtual && !window._pacNovo) {
+    toast('⚠️ Preencha nome e data de nascimento (Step 1) antes de finalizar.','err');
     goStep(0); return;
   }
-  dados.pacId = window._pacIdAtual;
+
+  // Materializa o ID definitivo só agora: paciente existente reusa; novo gera com verificação de unicidade
+  let pacId = window._pacIdAtual;
+  if (!pacId) {
+    const pacs = await DB.get('pacientes') || {};
+    do { pacId = gerarNovoID(); } while (pacs[pacId]);
+    window._pacIdAtual = pacId;
+  }
+  dados.pacId = pacId;
   dados.finalizado = true;
   dados.timestamp_final = new Date().toISOString();
   document.getElementById('s-dot').className='dot saving';
@@ -6236,7 +6452,7 @@ async function salvarProntuario(){
   setTimeout(()=>{
     document.getElementById('s-dot').className='dot saved';
     document.getElementById('s-text').textContent='Salvo em '+new Date().toLocaleTimeString('pt-BR');
-    clearDraft(); window._pacIdAtual = null;
+    clearDraft(); window._pacIdAtual = null; window._pacNovo = false;
     const msgEl = document.createElement('div');
     msgEl.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,.2);padding:32px 36px;z-index:9999;text-align:center;max-width:380px;width:90vw';
     msgEl.innerHTML=`
@@ -6261,7 +6477,7 @@ async function salvarProntuario(){
 function novaConsulta(){
   if(!confirm('Iniciar nova consulta? Dados não salvos serão perdidos.'))return;
   clearDraft();
-  window._pacIdAtual = null;
+  window._pacIdAtual = null; window._pacNovo = false;
   document.querySelectorAll('#medicos input:not([readonly]),#medicos textarea,#medicos select').forEach(el=>el.value='');
   document.querySelectorAll('.alarm').forEach(c=>c.checked=false);
   document.querySelectorAll('input[name="vac"]').forEach(r=>r.checked=false);
@@ -6275,7 +6491,7 @@ function novaConsulta(){
   document.getElementById('f-crm').value=medCRM;
   document.getElementById('growth-sexo').value='M';
   // Resetar bloco de ID automático
-  window._pacIdAtual = null;
+  window._pacIdAtual = null; window._pacNovo = false;
   const bloco = document.getElementById('pac-id-bloco');
   if (bloco) bloco.style.display = 'none';
   const btnNext = document.getElementById('btn-proximo-step1');
@@ -7319,7 +7535,12 @@ async function salvarCadastroPac() {
   }
 
   // Se encontrou cadastro existente via busca, reusar o ID
-  const id = window._cadPacIdExistente || _cadPacIdGerado;
+  let id = window._cadPacIdExistente || _cadPacIdGerado;
+  // Confirma unicidade no momento do salvamento (o ID do preview pode ter sido usado nesse meio-tempo)
+  if (!window._cadPacIdExistente) {
+    const _pacsAll = await DB.get('pacientes') || {};
+    if (!id || _pacsAll[id]) { do { id = gerarNovoID(); } while (_pacsAll[id]); _cadPacIdGerado = id; }
+  }
   const pacExistente = window._cadPacIdExistente
     ? await DB.get('pacientes/' + id)
     : null;
