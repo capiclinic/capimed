@@ -3454,6 +3454,7 @@ function _activateMedSession(u) {
     DB.get('medicos/' + u + '/authUid').then(a => { if (!a) DB.set('medicos/' + u + '/authUid', uid); }).catch(()=>{});
     try { DB.set('medicos/' + u + '/ultimoAcesso', new Date().toISOString()); } catch(e) {}
   }
+  _registrarAcesso('med', u);
   document.getElementById('med-logged-name').textContent = MED_NAMES[u];
   setTimeout(renderAtividadesMed, 600);
   document.getElementById('f-crm').value = u;
@@ -3487,6 +3488,7 @@ function _finalizarLoginPac(id, pf) {
   const uid = auth.currentUser && auth.currentUser.uid;
   if (uid) { try { DB.set('pacUidToId/' + uid, id); } catch(e) {} } // índice p/ login por e-mail
   try { DB.set('pacientes/' + id + '/ultimoAcesso', new Date().toISOString()); } catch(e) {}
+  _registrarAcesso('pac', id);
   document.getElementById('pac-logged-name').textContent = pacName;
   showPage('pacientes', document.getElementById('tab-pac'));
   loadPacData(); initGrowthChartPac();
@@ -3570,10 +3572,10 @@ async function doLoginPac() {
   err.style.display = 'block';
 }
 
-function logout(role) {
+function logout(role, forcado) {
   if (role === 'med') {
     const temRascunho = !!localStorage.getItem(KEY_DRAFT + '_' + medCRM);
-    if (temRascunho) {
+    if (temRascunho && !forcado) {
       if (!confirm('Há um rascunho de consulta não salvo. Sair mesmo assim? O rascunho será descartado.')) return;
       clearDraft();
     }
@@ -3605,6 +3607,175 @@ function logout(role) {
     document.querySelectorAll('.tab')[0].classList.add('active');
   }
 }
+
+// ═══════════════════ REGISTRO DE ACESSOS (auditoria de login) ═══════════════════
+// Grava, a cada login (médico OU paciente), características do acesso para o admin:
+// data/hora, IP, localização aproximada (por IP), dispositivo, navegador e SO.
+// É best-effort: qualquer falha de rede NÃO impede o login.
+
+function _escAcesso(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function _detectarDispositivo() {
+  const ua = navigator.userAgent || '';
+  let so = 'Desconhecido';
+  if (/Windows NT/.test(ua)) so = 'Windows';
+  else if (/iPhone|iPad|iPod/.test(ua)) so = 'iOS';
+  else if (/Android/.test(ua)) so = 'Android';
+  else if (/Mac OS X/.test(ua)) so = 'macOS';
+  else if (/Linux/.test(ua)) so = 'Linux';
+  let nav = 'Desconhecido';
+  if (/Edg\//.test(ua)) nav = 'Edge';
+  else if (/OPR\/|Opera/.test(ua)) nav = 'Opera';
+  else if (/Firefox\//.test(ua)) nav = 'Firefox';
+  else if (/Chrome\//.test(ua)) nav = 'Chrome';
+  else if (/Safari\//.test(ua)) nav = 'Safari';
+  const tipo = /Mobi|Android|iPhone|iPad|iPod/.test(ua) ? 'Celular/Tablet' : 'Computador';
+  return { so: so, navegador: nav, tipo: tipo, ua: ua };
+}
+
+async function _buscarIpGeo() {
+  function _fetchT(url, ms) {
+    const ctrl = new AbortController();
+    const t = setTimeout(function(){ ctrl.abort(); }, ms);
+    return fetch(url, { signal: ctrl.signal }).finally(function(){ clearTimeout(t); });
+  }
+  // Provedor 1: ipwho.is (HTTPS, sem chave)
+  try {
+    const r = await _fetchT('https://ipwho.is/', 4500);
+    const d = await r.json();
+    if (d && d.success !== false && d.ip) {
+      return { ip: d.ip, cidade: d.city || '', regiao: d.region || '', pais: d.country || '', provedor: (d.connection && d.connection.isp) || '' };
+    }
+  } catch (e) {}
+  // Provedor 2 (fallback): freeipapi.com (HTTPS, sem chave)
+  try {
+    const r = await _fetchT('https://freeipapi.com/api/json', 4500);
+    const d = await r.json();
+    if (d && d.ipAddress) {
+      return { ip: d.ipAddress, cidade: d.cityName || '', regiao: d.regionName || '', pais: d.countryName || '', provedor: '' };
+    }
+  } catch (e) {}
+  return { ip: '', cidade: '', regiao: '', pais: '', provedor: '' };
+}
+
+async function _registrarAcesso(tipo, chave) {
+  try {
+    if (!chave) return;
+    const dev = _detectarDispositivo();
+    const geo = await _buscarIpGeo();
+    const registro = {
+      ts: new Date().toISOString(),
+      ip: geo.ip || '',
+      cidade: geo.cidade || '',
+      regiao: geo.regiao || '',
+      pais: geo.pais || '',
+      provedor: geo.provedor || '',
+      dispositivo: dev.tipo,
+      navegador: dev.navegador,
+      so: dev.so,
+      idioma: navigator.language || '',
+      tela: (screen.width || '?') + 'x' + (screen.height || '?'),
+      userAgent: dev.ua
+    };
+    await DB.push('acessos/' + tipo + '/' + chave, registro);
+  } catch (e) { console.warn('registro de acesso:', e); }
+}
+
+// Renderiza no modal de estatísticas do admin o histórico de acessos do usuário.
+async function _renderHistoricoAcessos(tipo, chave) {
+  const cont = document.getElementById('stats-acessos');
+  if (!cont) return;
+  const tituloUp = '<div style="font-size:12px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px">Histórico de acessos</div>';
+  cont.innerHTML = tituloUp + '<div style="color:var(--muted);font-size:13px">⏳ Carregando acessos…</div>';
+  let dados = {};
+  try {
+    const snap = await db.ref('acessos/' + tipo + '/' + chave).orderByChild('ts').limitToLast(30).once('value');
+    dados = snap.val() || {};
+  } catch (e) {}
+  const arr = Object.values(dados)
+    .sort(function(a, b){ return new Date(b.ts || 0) - new Date(a.ts || 0); })
+    .slice(0, 30);
+  if (!arr.length) {
+    cont.innerHTML = tituloUp + '<div style="color:var(--muted);font-size:13px;padding:2px 0">Nenhum acesso registrado ainda. Os acessos passam a ser gravados a partir da publicação desta versão e da liberação da regra do nó <code>acessos</code> no Firebase.</div>';
+    return;
+  }
+  const linhas = arr.map(function(a){
+    const quando = a.ts ? new Date(a.ts).toLocaleString('pt-BR') : '—';
+    const local = [a.cidade, a.regiao, a.pais].filter(Boolean).map(_escAcesso).join(', ') || 'Localização indisponível';
+    const disp = [a.dispositivo, a.so, a.navegador].filter(Boolean).map(_escAcesso).join(' · ') || '—';
+    const ip = _escAcesso(a.ip || '—');
+    const isp = a.provedor ? (' · ' + _escAcesso(a.provedor)) : '';
+    return '<div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:var(--soft)">'
+      + '<div style="font-weight:800;color:var(--navy);font-size:13px;margin-bottom:3px">🕑 ' + _escAcesso(quando) + '</div>'
+      + '<div style="font-size:12.5px;color:var(--muted);line-height:1.7">'
+      + '📍 ' + local + '<br>'
+      + '🌐 IP: ' + ip + isp + '<br>'
+      + '💻 ' + disp
+      + '</div></div>';
+  }).join('');
+  cont.innerHTML = tituloUp.replace('Histórico de acessos', 'Histórico de acessos (últimos ' + arr.length + ')') + linhas;
+}
+
+// ═══════════════════ ENCERRAMENTO POR INATIVIDADE ═══════════════════
+// Encerra a sessão (médico OU paciente) após 1 hora sem atividade e avisa.
+const INATIVIDADE_LIMITE_MS = 60 * 60 * 1000; // 1 hora
+let _ultimaAtividade = Date.now();
+let _inatividadeAvisoAberto = false;
+
+function _registrarAtividade() { _ultimaAtividade = Date.now(); }
+['mousemove','mousedown','keydown','touchstart','scroll','click','wheel'].forEach(function(ev){
+  window.addEventListener(ev, _registrarAtividade, { passive: true, capture: true });
+});
+
+function _verificarInatividade() {
+  if (_inatividadeAvisoAberto) return;
+  if (!loggedMed && !loggedPac) { _ultimaAtividade = Date.now(); return; }
+  if (Date.now() - _ultimaAtividade < INATIVIDADE_LIMITE_MS) return;
+  _encerrarPorInatividade();
+}
+
+function _encerrarPorInatividade() {
+  _inatividadeAvisoAberto = true;
+  try {
+    if (loggedMed) logout('med', true);
+    else if (loggedPac) logout('pac', true);
+  } catch (e) { console.warn('logout inatividade:', e); }
+  _mostrarAvisoInatividade();
+}
+
+function _mostrarAvisoInatividade() {
+  // 1) Tenta abrir uma aba com o aviso. Pode ser bloqueado pelo navegador,
+  //    pois não parte de um clique do usuário — por isso há também o aviso
+  //    garantido na própria página (overlay), logo abaixo.
+  try {
+    const w = window.open('', '_blank');
+    if (w && w.document) {
+      w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Sessão encerrada — CapiClinic</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:#0C203A;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px"><div style="max-width:440px;text-align:center"><div style="font-size:52px">🔒</div><h1 style="font-size:22px;margin:14px 0 10px">Sessão encerrada por inatividade</h1><p style="font-size:15px;line-height:1.6;color:#B8C4D6;margin:0 0 8px">Sua sessão no CapiClinic foi encerrada automaticamente após 1 hora sem atividade, por segurança.</p><p style="font-size:15px;line-height:1.6;color:#B8C4D6;margin:0">Volte à aba do CapiClinic e faça login novamente para continuar.</p></div></body></html>');
+      w.document.close();
+    }
+  } catch (e) {}
+
+  // 2) Aviso garantido na própria página.
+  if (document.getElementById('inatividade-overlay')) return;
+  const ov = document.createElement('div');
+  ov.id = 'inatividade-overlay';
+  ov.style.cssText = "position:fixed;inset:0;z-index:2147483000;background:rgba(12,32,58,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;font-family:'DM Sans',sans-serif";
+  ov.innerHTML = '<div style="background:#fff;max-width:420px;width:100%;border-radius:18px;box-shadow:0 12px 50px rgba(12,32,58,.3);padding:32px 28px;text-align:center">'
+    + '<div style="font-size:46px;line-height:1;margin-bottom:10px">🔒</div>'
+    + '<h2 style="margin:0 0 10px;color:#0C203A;font-size:20px;font-weight:800">Sessão encerrada por inatividade</h2>'
+    + '<p style="margin:0 0 22px;color:#5A6B82;font-size:14px;line-height:1.6">Sua sessão foi encerrada automaticamente após 1 hora sem atividade, por segurança. Faça login novamente para continuar.</p>'
+    + '<button id="inatividade-ok-btn" style="border:0;border-radius:12px;padding:12px 22px;font-weight:800;font-size:14px;cursor:pointer;background:#178A4A;color:#fff;font-family:\'DM Sans\',sans-serif">Voltar ao login</button>'
+    + '</div>';
+  document.body.appendChild(ov);
+  const btn = document.getElementById('inatividade-ok-btn');
+  if (btn) btn.addEventListener('click', function(){ location.reload(); });
+}
+
+setInterval(_verificarInatividade, 30 * 1000); // verifica a cada 30 segundos
 
 // ═══════════════════════════ SUB-ABAS ═══════════════════════════
 const MED_SUBS = ['perfil','pagina','atend','tele',2,3,'admin'];
@@ -3747,7 +3918,9 @@ async function verEstatisticasMedico(crm) {
      ${_statLinha('Página pública configurada', temPagina ? 'Sim' : 'Não', temPagina)}
      ${_statLinha('Realizou atendimentos', atend > 0 ? ('Sim (' + atend + ')') : 'Ainda não', atend > 0)}
      ${_statLinha('Conta autenticada (Auth)', med.authUid ? 'Sim' : 'Pendente', !!med.authUid)}
-     ${_statLinha('Perfil', isAdmin ? 'Administrador' : 'Médico')}`;
+     ${_statLinha('Perfil', isAdmin ? 'Administrador' : 'Médico')}
+     <div id="stats-acessos"></div>`;
+  _renderHistoricoAcessos('med', crm);
 }
 
 async function verEstatisticasPaciente(pid) {
@@ -3780,7 +3953,9 @@ async function verEstatisticasPaciente(pid) {
      ${_statLinha('Solicitou agendamento', agend > 0 ? ('Sim (' + agend + ')') : 'Não', agend > 0)}
      ${_statLinha('Recebeu arquivos', arqRec > 0 ? ('Sim (' + arqRec + ')') : 'Não', arqRec > 0)}
      ${_statLinha('Responsável', p.responsavel || '—')}
-     ${_statLinha('Conta autenticada (Auth)', p.authUid ? 'Sim' : 'Pendente', !!p.authUid)}`;
+     ${_statLinha('Conta autenticada (Auth)', p.authUid ? 'Sim' : 'Pendente', !!p.authUid)}
+     <div id="stats-acessos"></div>`;
+  _renderHistoricoAcessos('pac', pid);
 }
 
 // ═══════════════════════════ PAINEL DE USO (ADMIN) ═══════════════════════════
